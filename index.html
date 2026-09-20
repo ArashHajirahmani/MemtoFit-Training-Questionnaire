@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MemtoFit · Training Profile Questionnaire v1.4</title>
+<style>
+  :root {
+    --raft-bg: #2C4A27;
+    --raft-bg-inv: #181F17;
+    --raft-accent: #FAAF58;
+    --raft-accent-secondary: #F99E34;
+    --raft-fg: #F2F2F2;
+    --paper: #f7f4ee;
+    --ink: #181F17;
+    --muted: #4a5a48;
+    --line: #d4d0c6;
+    --fill: #fff;
+    --ok: #2C4A27;
+    --tap: 2.75rem;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font: 17px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  .hero {
+    background: var(--raft-bg);
+    color: var(--raft-fg);
+    padding: 1.35rem 1.1rem 1.5rem;
+    text-align: center;
+  }
+  .brand {
+    margin: 0 auto;
+    font-size: 1.35rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    color: var(--raft-accent);
+    line-height: 1.2;
+  }
+  .hero h1 {
+    margin: 0.7rem 0 0.35rem;
+    font-size: 1.45rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+    color: var(--raft-fg);
+  }
+  .hero .sub {
+    margin: 0 auto;
+    max-width: 28rem;
+    color: var(--raft-fg);
+    opacity: 0.88;
+    font-size: 0.95rem;
+    line-height: 1.4;
+  }
+  .wrap { max-width: 40rem; margin: 0 auto; padding: 1rem 0.9rem 5.5rem; }
+  .toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.65rem 0.9rem;
+    background: rgba(247,244,238,0.94);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line);
+  }
+  .toolbar button {
+    flex: 1;
+    min-height: var(--tap);
+    border: 0;
+    border-radius: 0.7rem;
+    background: var(--raft-bg);
+    color: var(--raft-fg);
+    font: 600 0.95rem/1 system-ui, sans-serif;
+    cursor: pointer;
+  }
+  .toolbar button.ghost { background: var(--raft-accent); color: var(--raft-bg-inv); }
+  .measure {
+    display: grid;
+    grid-template-columns: 1fr 6.5rem;
+    gap: 0.5rem;
+    align-items: end;
+  }
+  .btn-add {
+    display: block;
+    width: 100%;
+    min-height: var(--tap);
+    margin: 0.2rem 0 0.9rem;
+    border: 1.5px dashed #b8c4b4;
+    border-radius: 0.7rem;
+    background: #fffdf8;
+    color: var(--raft-bg);
+    font: 600 0.95rem/1 system-ui, sans-serif;
+    cursor: pointer;
+  }
+  h2 {
+    margin: 1.6rem 0 0.55rem;
+    padding: 0.55rem 0.75rem;
+    background: var(--raft-bg);
+    color: var(--raft-fg);
+    font-size: 1.05rem;
+    border-radius: 0.55rem;
+  }
+  p.lead, p.hint {
+    margin: 0 0 0.85rem;
+    color: var(--muted);
+    font-size: 0.92rem;
+    line-height: 1.45;
+  }
+  p.hint { margin-top: -0.35rem; }
+  .card {
+    background: var(--fill);
+    border: 1px solid var(--line);
+    border-radius: 0.85rem;
+    padding: 0.95rem 0.9rem 1.05rem;
+    margin: 0 0 0.85rem;
+  }
+  .q {
+    display: block;
+    font-weight: 700;
+    font-size: 1.02rem;
+    margin: 0 0 0.2rem;
+  }
+  label.field {
+    display: block;
+    margin: 0.55rem 0 0.2rem;
+    font-size: 0.82rem;
+    font-weight: 650;
+    color: var(--muted);
+  }
+  input[type="text"], input[type="number"], input[type="date"], textarea, select {
+    width: 100%;
+    min-height: var(--tap);
+    padding: 0.65rem 0.75rem;
+    border: 1.5px solid #c9c4b8;
+    border-radius: 0.55rem;
+    background: #fffdf8;
+    font: inherit;
+    appearance: none;
+  }
+  textarea { min-height: 7.5rem; resize: vertical; }
+  .opt {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.7rem;
+    width: 100%;
+    min-height: var(--tap);
+    margin: 0.35rem 0;
+    padding: 0.7rem 0.75rem;
+    border: 1.5px solid var(--line);
+    border-radius: 0.7rem;
+    background: #fffdf8;
+    cursor: pointer;
+    text-align: left;
+  }
+  .opt span {
+    flex: 1;
+    padding-top: 0.1rem;
+  }
+  .opt small {
+    display: block;
+    margin-top: 0.2rem;
+    font-weight: 400;
+    color: var(--muted);
+    font-size: 0.88rem;
+    line-height: 1.35;
+  }
+  .opt input {
+    flex: none;
+    width: 1.35rem;
+    height: 1.35rem;
+    margin: 0.15rem 0 0;
+    accent-color: var(--ok);
+  }
+  .ex {
+    margin: 0.55rem 0 0;
+    padding: 0.7rem 0.8rem;
+    background: #eef3ea;
+    border-radius: 0.55rem;
+    font-size: 0.88rem;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+  .ex strong { color: var(--ink); }
+  .lim { margin: 0 0 1rem; padding-bottom: 0.85rem; border-bottom: 1px solid var(--line); }
+  .lim:last-of-type { border-bottom: 0; margin-bottom: 0.2rem; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.55rem; }
+  .note {
+    margin-top: 1.4rem;
+    font-size: 0.85rem;
+    color: var(--muted);
+    text-align: center;
+  }
+  @media (min-width: 640px) {
+    .hero h1 { font-size: 1.7rem; }
+    .brand { font-size: 1.45rem; }
+    .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+    .pair .card { margin: 0; }
+  }
+  @media print {
+    .toolbar { display: none; }
+    body { background: #fff; }
+    .wrap { padding: 0.4rem 0.6rem 1rem; max-width: none; }
+    .hero { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    h2, button { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .card { break-inside: avoid; }
+    .btn-add { display: none; }
+  }
+</style>
+</head>
+<body>
+<header class="hero">
+  <p class="brand">MemtoFit</p>
+  <h1>Training Profile Questionnaire</h1>
+  <p class="sub">v1.4 · Fill in what you know. Approximate answers are fine.</p>
+</header>
+<div class="toolbar">
+  <button type="button" onclick="window.print()">Print / Save PDF</button>
+  <button type="button" class="ghost" onclick="window.print()">Share</button>
+</div>
+<main class="wrap">
+
+<h2>Part 1 - About you</h2>
+<p class="lead">These answers help us set starting weights, how much work to give you, and how hard the first weeks should feel. Skip anything you do not know.</p>
+
+<div class="card">
+  <label class="field" for="name">Name</label>
+  <input id="name" type="text" autocomplete="name">
+  <label class="field" for="age">Age</label>
+  <input id="age" type="number" inputmode="numeric" min="12" max="90">
+</div>
+
+<div class="card">
+  <span class="q">Sex</span>
+  <p class="hint">Helps us set typical strength and body-fat ranges.</p>
+  <label class="opt"><span>Male</span><input type="radio" name="sex"></label>
+  <label class="opt"><span>Female</span><input type="radio" name="sex"></label>
+</div>
+
+<div class="card">
+  <label class="field" for="ht">Height</label>
+  <div class="measure">
+    <input id="ht" type="text" inputmode="decimal" placeholder="178">
+    <select id="ht-unit" aria-label="Height unit">
+      <option value="cm" selected>cm</option>
+      <option value="in">in</option>
+      <option value="ftin">ft/in</option>
+    </select>
+  </div>
+  <label class="field" for="wt">Weight</label>
+  <div class="measure">
+    <input id="wt" type="number" inputmode="decimal" min="0" step="any" placeholder="75">
+    <select id="wt-unit" aria-label="Weight unit">
+      <option value="kg" selected>kg</option>
+      <option value="lb">lb</option>
+    </select>
+  </div>
+</div>
+
+<div class="card">
+  <span class="q">Body fat (closest match)</span>
+  <p class="hint">Use a mirror or a recent photo. An exact percentage is not needed.</p>
+  <label class="opt"><span>Under 12%<small>Very lean. Abs are clearly visible, a six-pack look.</small></span><input type="radio" name="bf"></label>
+  <label class="opt"><span>12-17%<small>Athletic. Some ab outline; a little softness at the waist is normal.</small></span><input type="radio" name="bf"></label>
+  <label class="opt"><span>18-24%<small>Typical trained look. A layer at the waist; abs only in good light.</small></span><input type="radio" name="bf"></label>
+  <label class="opt"><span>25-30%<small>Softer midsection. Clothes sit looser at the waist and hips.</small></span><input type="radio" name="bf"></label>
+  <label class="opt"><span>Over 30%<small>Clearly carrying extra fat through the middle.</small></span><input type="radio" name="bf"></label>
+</div>
+
+<div class="card">
+  <span class="q">Training experience</span>
+  <label class="opt"><span>Beginner<small>Less than about 1 year of consistent lifting.</small></span><input type="radio" name="xp"></label>
+  <label class="opt"><span>Intermediate<small>About 1-3 years. Most machines and basic free weights feel familiar.</small></span><input type="radio" name="xp"></label>
+  <label class="opt"><span>Advanced<small>More than 3 years. You can correct your own form and push hard sets.</small></span><input type="radio" name="xp"></label>
+</div>
+
+<div class="card">
+  <span class="q">Hours sitting on a typical day</span>
+  <p class="hint">Include desk, commute, and sofa. Do not include sleep.</p>
+  <label class="opt"><span>Under 5 hours</span><input type="radio" name="sit"></label>
+  <label class="opt"><span>5-9 hours</span><input type="radio" name="sit"></label>
+  <label class="opt"><span>Over 9 hours</span><input type="radio" name="sit"></label>
+</div>
+
+<div class="card">
+  <span class="q">Daily steps</span>
+  <p class="hint">A phone or watch estimate is fine. Distances assume a normal walk; your stride may differ.</p>
+  <label class="opt"><span>Under 5,000<small>Under about 4 km, or under about 40 minutes of walking.</small></span><input type="radio" name="steps"></label>
+  <label class="opt"><span>5,000-10,000<small>About 4-8 km, or about 40-80 minutes of walking.</small></span><input type="radio" name="steps"></label>
+  <label class="opt"><span>Over 10,000<small>About 8 km or more, or 80 minutes or more of walking.</small></span><input type="radio" name="steps"></label>
+</div>
+
+<div class="card">
+  <span class="q">How active is your job?</span>
+  <p class="hint">Standing and lifting are tiring, but they usually burn less than sport. Your job title comes later.</p>
+  <label class="opt"><span>Mostly sitting<small>Desk, driving, or meetings. Little lifting.</small></span><input type="radio" name="jobmove"></label>
+  <label class="opt"><span>On my feet most of the day<small>Retail, teaching, hospitality, or similar: walking and standing, not heavy loads.</small></span><input type="radio" name="jobmove"></label>
+  <label class="opt"><span>Physical work<small>Trades, warehouse, kitchen, or caregiving with repeated lifting or carrying.</small></span><input type="radio" name="jobmove"></label>
+</div>
+
+<div class="card">
+  <span class="q">Sport or extra training</span>
+  <p class="hint">Anything besides this gym program: sport, classes, or extra lifting. Check all that apply.</p>
+  <label class="opt"><span>None right now</span><input type="checkbox"></label>
+  <label class="opt"><span>Light extra (1-2 times a week)<small>Yoga, easy cycling, a casual run, or a stretch class.</small></span><input type="checkbox"></label>
+  <label class="opt"><span>Regular sport (2 or more times a week)<small>Team sport, martial arts, climbing, or swim practice.</small></span><input type="checkbox"></label>
+  <label class="opt"><span>Hard or competitive weeks<small>Matches, races, or long sessions that leave you very tired the next day.</small></span><input type="checkbox"></label>
+  <label class="field" for="sportnote">If yes, what and on which days?</label>
+  <input id="sportnote" type="text" placeholder="e.g. soccer Tue and Sun; climbing Thu">
+</div>
+
+<h2>Part 2 - Goals</h2>
+<div class="card">
+  <span class="q">Main goal</span>
+  <p class="hint">Choose one.</p>
+  <label class="opt"><span>Hypertrophy<small>Build muscle size. Needs enough food and hard sets.</small></span><input type="radio" name="goal"></label>
+  <label class="opt"><span>Strength<small>Lift heavier. Fewer reps, more rest.</small></span><input type="radio" name="goal"></label>
+  <label class="opt"><span>Fat loss<small>Keep muscle while losing fat. Food does most of the fat loss.</small></span><input type="radio" name="goal"></label>
+  <label class="opt"><span>General fitness<small>Feel better, move well, and stay consistent.</small></span><input type="radio" name="goal"></label>
+</div>
+<div class="card">
+  <span class="q">Nutrition phase</span>
+  <label class="opt"><span>Bulk<small>Eat a little more than you burn. Fits hypertrophy best.</small></span><input type="radio" name="nut"></label>
+  <label class="opt"><span>Cut<small>Eat a little less than you burn. Fits fat loss best.</small></span><input type="radio" name="nut"></label>
+  <label class="opt"><span>Maintain</span><input type="radio" name="nut"></label>
+  <label class="opt"><span>Not sure</span><input type="radio" name="nut"></label>
+</div>
+<div class="card">
+  <span class="q">Muscles you want to prioritize</span>
+  <p class="hint">Check a few. The others will still be trained enough to maintain.</p>
+  <label class="opt"><span>Chest</span><input type="checkbox"></label>
+  <label class="opt"><span>Back</span><input type="checkbox"></label>
+  <label class="opt"><span>Shoulders</span><input type="checkbox"></label>
+  <label class="opt"><span>Arms</span><input type="checkbox"></label>
+  <label class="opt"><span>Legs</span><input type="checkbox"></label>
+  <label class="opt"><span>Glutes</span><input type="checkbox"></label>
+  <label class="opt"><span>Core</span><input type="checkbox"></label>
+  <label class="opt"><span>Calves</span><input type="checkbox"></label>
+  <label class="opt"><span>Posture / upper back</span><input type="checkbox"></label>
+</div>
+<div class="card">
+  <span class="q">Training style you prefer</span>
+  <label class="opt"><span>Machines and cables</span><input type="checkbox"></label>
+  <label class="opt"><span>Dumbbells</span><input type="checkbox"></label>
+  <label class="opt"><span>Barbells</span><input type="checkbox"></label>
+  <label class="opt"><span>Bodyweight</span><input type="checkbox"></label>
+  <label class="opt"><span>No preference, mix as needed</span><input type="checkbox"></label>
+</div>
+
+<h2>Part 3 - Schedule and gym</h2>
+<div class="card">
+  <span class="q">Sessions per week</span>
+  <label class="opt"><span>2</span><input type="radio" name="nper"></label>
+  <label class="opt"><span>3</span><input type="radio" name="nper"></label>
+  <label class="opt"><span>4</span><input type="radio" name="nper"></label>
+  <label class="opt"><span>5</span><input type="radio" name="nper"></label>
+</div>
+<div class="card">
+  <span class="q">Days you can train</span>
+  <label class="opt"><span>Monday</span><input type="checkbox"></label>
+  <label class="opt"><span>Tuesday</span><input type="checkbox"></label>
+  <label class="opt"><span>Wednesday</span><input type="checkbox"></label>
+  <label class="opt"><span>Thursday</span><input type="checkbox"></label>
+  <label class="opt"><span>Friday</span><input type="checkbox"></label>
+  <label class="opt"><span>Saturday</span><input type="checkbox"></label>
+  <label class="opt"><span>Sunday</span><input type="checkbox"></label>
+</div>
+<div class="card">
+  <span class="q">How long can each session last?</span>
+  <label class="opt"><span>About 45 minutes</span><input type="radio" name="mins"></label>
+  <label class="opt"><span>60-75 minutes</span><input type="radio" name="mins"></label>
+  <label class="opt"><span>75-90 minutes</span><input type="radio" name="mins"></label>
+  <label class="opt"><span>90-110 minutes</span><input type="radio" name="mins"></label>
+</div>
+<div class="card">
+  <span class="q">Usual time of day</span>
+  <label class="opt"><span>Morning</span><input type="radio" name="tod"></label>
+  <label class="opt"><span>Midday / lunch</span><input type="radio" name="tod"></label>
+  <label class="opt"><span>After work / evening</span><input type="radio" name="tod"></label>
+  <label class="field" for="clock">Usual start time (optional)</label>
+  <input id="clock" type="text" placeholder="e.g. 6:00 PM">
+</div>
+<div class="card">
+  <span class="q">Bonus day</span>
+  <p class="hint">An optional extra session when you have leftover energy. It is not a required extra day.</p>
+  <label class="opt"><span>Yes, I might use one</span><input type="radio" name="bonus"></label>
+  <label class="opt"><span>No</span><input type="radio" name="bonus"></label>
+</div>
+<div class="card">
+  <span class="q">Gym size</span>
+  <p class="hint">Pick the closest match. You do not need to list every machine.</p>
+  <label class="opt"><span>Home<small>Bands, a bench or floor, maybe a pair of dumbbells.</small></span><input type="radio" name="gym"></label>
+  <label class="opt"><span>Small condo gym<small>A few machines and limited free weights.</small></span><input type="radio" name="gym"></label>
+  <label class="opt"><span>Medium local gym<small>Main machines and racks, but not every specialty piece.</small></span><input type="radio" name="gym"></label>
+  <label class="opt"><span>Large gym<small>Full floor: specialty machines, cables, and several racks.</small></span><input type="radio" name="gym"></label>
+  <label class="field" for="gymname">Gym name and city (optional)</label>
+  <input id="gymname" type="text">
+</div>
+<div class="card">
+  <span class="q">How long have you trained at this gym?</span>
+  <p class="hint">This is about knowing the floor, not how long you have been lifting. If you are new, we keep nearby backups when a machine is busy.</p>
+  <label class="opt"><span>New (under 3 months)<small>Still learning where things are.</small></span><input type="radio" name="gymyrs"></label>
+  <label class="opt"><span>3-12 months</span><input type="radio" name="gymyrs"></label>
+  <label class="opt"><span>1-3 years</span><input type="radio" name="gymyrs"></label>
+  <label class="opt"><span>Over 3 years<small>You know the busy hours and the backups.</small></span><input type="radio" name="gymyrs"></label>
+</div>
+
+<h2>Part 4 - Limitations</h2>
+<p class="lead">Tell us what we should be careful with. We will adjust the exercise (weight, range, or a swap) rather than drop it unless we must. If something is severe, we wait for clearance before writing a plan.</p>
+<div class="card">
+  <div id="lim-list">
+    <div class="lim">
+      <label class="field">Injury or limitation</label>
+      <input type="text" placeholder="e.g. lower back when I bend forward">
+      <label class="field">Side</label>
+      <select>
+        <option value=""></option>
+        <option>Left</option>
+        <option>Right</option>
+        <option>Both</option>
+      </select>
+      <label class="field">Level</label>
+      <select>
+        <option value=""></option>
+        <option>1 Mild: keep the movement, go carefully</option>
+        <option>2 Moderate: change the exercise</option>
+        <option>3 Significant: avoid that movement pattern</option>
+        <option>4 Severe: no plan until cleared</option>
+      </select>
+    </div>
+  </div>
+  <button type="button" class="btn-add" id="add-lim">+ Add another</button>
+  <label class="field" for="limnote">Any guidance from a physiotherapist or doctor we should follow?</label>
+  <textarea id="limnote"></textarea>
+</div>
+
+<h2>Part 5 - Lifestyle</h2>
+<p class="lead">Sleep, stress, and job title help us judge recovery. How physical the job is was asked above.</p>
+<div class="card">
+  <label class="field" for="job">Occupation</label>
+  <input id="job" type="text" placeholder="e.g. software developer, nurse, student">
+  <label class="field" for="sleep">Sleep (hours per night)</label>
+  <input id="sleep" type="text" placeholder="e.g. 6-7">
+  <label class="field" for="stress">Stress lately</label>
+  <select id="stress"><option></option><option>Low</option><option>Medium</option><option>High</option></select>
+</div>
+
+<h2>Part 6 - Other notes</h2>
+<div class="card">
+  <span class="q">Preferences and constraints</span>
+  <p class="hint">Anything here is used to tailor the program. Skip if nothing applies.</p>
+  <div class="ex">
+    <strong>Examples</strong><br>
+    Prefer machines over barbells.<br>
+    Gym is crowded at 6 pm.<br>
+    No early mornings.<br>
+    Start light for the first two weeks.<br>
+    Skip preacher curl, hip abductor, or behind-the-neck work.<br>
+    Prefer short cardio, not one long block.<br>
+    I do not want to use the squat rack.<br>
+    Wrists bother me on heavy barbell presses.
+  </div>
+  <label class="field" for="prefs">Your notes</label>
+  <textarea id="prefs" placeholder="Write anything that should change the program."></textarea>
+</div>
+
+<p class="note">Your answers are used only to build a training program that fits you. This is not a medical assessment. Feedback is welcome.</p>
+</main>
+<template id="lim-tpl">
+  <div class="lim">
+    <label class="field">Injury or limitation</label>
+    <input type="text">
+    <label class="field">Side</label>
+    <select>
+      <option value=""></option>
+      <option>Left</option>
+      <option>Right</option>
+      <option>Both</option>
+    </select>
+    <label class="field">Level</label>
+    <select>
+      <option value=""></option>
+      <option>1 Mild: keep the movement, go carefully</option>
+      <option>2 Moderate: change the exercise</option>
+      <option>3 Significant: avoid that movement pattern</option>
+      <option>4 Severe: no plan until cleared</option>
+    </select>
+  </div>
+</template>
+<script>
+(function () {
+  var list = document.getElementById("lim-list");
+  var tpl = document.getElementById("lim-tpl");
+  document.getElementById("add-lim").addEventListener("click", function () {
+    list.appendChild(tpl.content.cloneNode(true));
+  });
+  var ht = document.getElementById("ht");
+  var htUnit = document.getElementById("ht-unit");
+  var hints = { cm: "178", in: "70", ftin: "5 10" };
+  var wt = document.getElementById("wt");
+  var wtUnit = document.getElementById("wt-unit");
+  htUnit.addEventListener("change", function () {
+    ht.placeholder = hints[htUnit.value] || "";
+  });
+  wtUnit.addEventListener("change", function () {
+    wt.placeholder = wtUnit.value === "lb" ? "165" : "75";
+  });
+})();
+</script>
+</body>
+</html>
