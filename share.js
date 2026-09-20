@@ -152,14 +152,24 @@
       downloadMarkdown(filename, text);
     }
 
+    function mailTo() {
+      var href = "mailto:?subject=" + encodeURIComponent(title) +
+        "&body=" + encodeURIComponent(text);
+      if (href.length > 8000) {
+        download();
+        return;
+      }
+      window.location.href = href;
+    }
+
     function shareText() {
       if (!navigator.share) {
-        download();
+        mailTo();
         return;
       }
       navigator.share({ title: title, text: text }).catch(function (err) {
         if (err && err.name === "AbortError") return;
-        download();
+        mailTo();
       });
     }
 
