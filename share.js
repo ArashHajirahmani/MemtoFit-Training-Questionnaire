@@ -142,37 +142,39 @@
   function shareMarkdown() {
     var text = buildMarkdown();
     var filename = "MemtoFit-" + fileSlug() + ".md";
-    var file;
+    var title = "MemtoFit questionnaire";
+    var file = null;
     try {
       file = new File([text], filename, { type: "text/plain" });
-    } catch (err) {
-      file = null;
-    }
+    } catch (err) {}
 
-    function fallback() {
+    function download() {
       downloadMarkdown(filename, text);
     }
 
+    function shareText() {
+      if (!navigator.share) {
+        download();
+        return;
+      }
+      navigator.share({ title: title, text: text }).catch(function (err) {
+        if (err && err.name === "AbortError") return;
+        download();
+      });
+    }
+
     if (file && navigator.canShare) {
-      var withFile = { title: "MemtoFit questionnaire", files: [file] };
+      var withFile = { title: title, files: [file] };
       if (navigator.canShare(withFile)) {
         navigator.share(withFile).catch(function (err) {
           if (err && err.name === "AbortError") return;
-          fallback();
+          shareText();
         });
         return;
       }
     }
 
-    if (navigator.share) {
-      navigator.share({ title: "MemtoFit questionnaire", text: text }).catch(function (err) {
-        if (err && err.name === "AbortError") return;
-        fallback();
-      });
-      return;
-    }
-
-    fallback();
+    shareText();
   }
 
   var btn = document.getElementById("share-btn");
