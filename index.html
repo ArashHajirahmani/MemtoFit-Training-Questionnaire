@@ -129,13 +129,17 @@
     line-height: 1.45;
   }
   p.hint { margin-top: -0.35rem; }
-  .card {
-    background: var(--fill);
-    border: 1px solid var(--line);
-    border-radius: 0.85rem;
-    padding: 0.95rem 0.9rem 1.05rem;
-    margin: 0 0 0.85rem;
+  .card.invalid { border-color: #b42318; }
+  .err {
+    display: none;
+    margin: 0.55rem 0 0;
+    color: #b42318;
+    font-size: 0.88rem;
+    line-height: 1.35;
   }
+  .card.invalid .err { display: block; }
+  .req::after { content: " *"; color: #b42318; font-weight: 700; }
+  .toolbar button[aria-disabled="true"] { opacity: 0.45; }
   .q {
     display: block;
     font-weight: 700;
@@ -237,26 +241,28 @@
   <p class="sub">Fill in what you know. We'll build a gym plan that actually fits you.</p>
 </header>
 <div class="toolbar">
-  <button type="button" onclick="window.print()">Print / Save PDF</button>
+  <button type="button" id="print-btn">Print / Save PDF</button>
   <button type="button" class="ghost" id="share-btn">Share</button>
 </div>
 <main class="wrap">
 
 <h2>Part 1 - About you</h2>
-<p class="lead">These answers help us set starting weights, how much work to give you, and how hard the first weeks should feel. Skip anything you do not know.</p>
+<p class="lead">Skip anything you do not know. Questions marked with * are needed to write a plan.</p>
 
-<div class="card">
-  <label class="field" for="name">Name</label>
+<div class="card" data-req="name">
+  <label class="field req" for="name">Name</label>
   <input id="name" type="text" autocomplete="name">
   <label class="field" for="age">Age</label>
   <input id="age" type="number" inputmode="numeric" min="12" max="90">
+  <p class="err"></p>
 </div>
 
-<div class="card">
-  <span class="q">Sex</span>
+<div class="card" data-req="sex">
+  <span class="q req">Sex</span>
   <p class="hint">Helps us set typical strength and body-fat ranges.</p>
   <label class="opt"><span>Male</span><input type="radio" name="sex"></label>
   <label class="opt"><span>Female</span><input type="radio" name="sex"></label>
+  <p class="err"></p>
 </div>
 
 <div class="card">
@@ -324,13 +330,15 @@
 </div>
 
 <h2>Part 2 - Goals</h2>
-<div class="card">
-  <span class="q">Main goal</span>
+<div class="card" data-req="goal">
+  <span class="q req">Main goal</span>
   <p class="hint">Choose one.</p>
   <label class="opt"><span>Hypertrophy<small>Build muscle size. Needs enough food and hard sets.</small></span><input type="radio" name="goal"></label>
   <label class="opt"><span>Strength<small>Lift heavier. Fewer reps, more rest.</small></span><input type="radio" name="goal"></label>
   <label class="opt"><span>Fat loss<small>Keep muscle while losing fat. Food does most of the fat loss.</small></span><input type="radio" name="goal"></label>
+  <label class="opt"><span>Recomposition<small>Build muscle and lose fat slowly. Food stays close to maintain.</small></span><input type="radio" name="goal"></label>
   <label class="opt"><span>General fitness<small>Feel better, move well, and stay consistent.</small></span><input type="radio" name="goal"></label>
+  <p class="err"></p>
 </div>
 <div class="card">
   <span class="q">Nutrition phase</span>
@@ -362,29 +370,33 @@
 </div>
 
 <h2>Part 3 - Schedule and gym</h2>
-<div class="card">
-  <span class="q">Sessions per week</span>
-  <label class="opt"><span>2</span><input type="radio" name="nper"></label>
-  <label class="opt"><span>3</span><input type="radio" name="nper"></label>
-  <label class="opt"><span>4</span><input type="radio" name="nper"></label>
-  <label class="opt"><span>5</span><input type="radio" name="nper"></label>
+<div class="card" data-req="nper">
+  <span class="q req">Sessions per week</span>
+  <label class="opt"><span>2</span><input type="radio" name="nper" value="2"></label>
+  <label class="opt"><span>3</span><input type="radio" name="nper" value="3"></label>
+  <label class="opt"><span>4</span><input type="radio" name="nper" value="4"></label>
+  <label class="opt"><span>5</span><input type="radio" name="nper" value="5"></label>
+  <p class="err"></p>
 </div>
-<div class="card">
-  <span class="q">Days you can train</span>
-  <label class="opt"><span>Monday</span><input type="checkbox"></label>
-  <label class="opt"><span>Tuesday</span><input type="checkbox"></label>
-  <label class="opt"><span>Wednesday</span><input type="checkbox"></label>
-  <label class="opt"><span>Thursday</span><input type="checkbox"></label>
-  <label class="opt"><span>Friday</span><input type="checkbox"></label>
-  <label class="opt"><span>Saturday</span><input type="checkbox"></label>
-  <label class="opt"><span>Sunday</span><input type="checkbox"></label>
+<div class="card" data-req="days">
+  <span class="q req">Days you can train</span>
+  <p class="hint">Mark every day you can go. Which days (not only how many) set how the week is split.</p>
+  <label class="opt"><span>Monday</span><input type="checkbox" name="day"></label>
+  <label class="opt"><span>Tuesday</span><input type="checkbox" name="day"></label>
+  <label class="opt"><span>Wednesday</span><input type="checkbox" name="day"></label>
+  <label class="opt"><span>Thursday</span><input type="checkbox" name="day"></label>
+  <label class="opt"><span>Friday</span><input type="checkbox" name="day"></label>
+  <label class="opt"><span>Saturday</span><input type="checkbox" name="day"></label>
+  <label class="opt"><span>Sunday</span><input type="checkbox" name="day"></label>
+  <p class="err"></p>
 </div>
-<div class="card">
-  <span class="q">How long can each session last?</span>
+<div class="card" data-req="mins">
+  <span class="q req">How long can each session last?</span>
   <label class="opt"><span>About 45 minutes</span><input type="radio" name="mins"></label>
   <label class="opt"><span>60-75 minutes</span><input type="radio" name="mins"></label>
   <label class="opt"><span>75-90 minutes</span><input type="radio" name="mins"></label>
   <label class="opt"><span>90-110 minutes</span><input type="radio" name="mins"></label>
+  <p class="err"></p>
 </div>
 <div class="card">
   <span class="q">Usual time of day</span>
@@ -400,8 +412,8 @@
   <label class="opt"><span>Yes, I might use one</span><input type="radio" name="bonus"></label>
   <label class="opt"><span>No</span><input type="radio" name="bonus"></label>
 </div>
-<div class="card">
-  <span class="q">Gym size</span>
+<div class="card" data-req="gym">
+  <span class="q req">Gym size</span>
   <p class="hint">Pick the closest match. You do not need to list every machine.</p>
   <label class="opt"><span>Home<small>Bands, a bench or floor, maybe a pair of dumbbells.</small></span><input type="radio" name="gym"></label>
   <label class="opt"><span>Small condo gym<small>A few machines and limited free weights.</small></span><input type="radio" name="gym"></label>
@@ -409,11 +421,7 @@
   <label class="opt"><span>Large gym<small>Full floor: specialty machines, cables, and several racks.</small></span><input type="radio" name="gym"></label>
   <label class="field" for="gymname">Gym name and city (optional)</label>
   <input id="gymname" type="text">
-</div>
-<div class="card">
-  <span class="q">How long have you trained at this gym?</span>
-  <label class="opt"><span>New (under 3 months)<small>Still learning where things are.</small></span><input type="radio" name="gymyrs"></label>
-  <label class="opt"><span>I know this gym</span><input type="radio" name="gymyrs"></label>
+  <p class="err"></p>
 </div>
 
 <h2>Part 4 - Limitations</h2>
@@ -446,7 +454,6 @@
 </div>
 
 <h2>Part 5 - Lifestyle</h2>
-<p class="lead">Optional.</p>
 <div class="card">
   <label class="field" for="job">Occupation</label>
   <input id="job" type="text" placeholder="e.g. software developer, nurse, student">
@@ -476,7 +483,7 @@
 </div>
 
 <p class="note">Your answers are used only to build a training program that fits you. This is not a medical assessment. Feedback is welcome.</p>
-<p class="note">v1.5 · © 2026 memtoria.com</p>
+<p class="note">v1.6 · © 2026 memtoria.com</p>
 </main>
 <template id="lim-tpl">
   <div class="lim">
@@ -519,6 +526,7 @@
   });
 })();
 </script>
+<script src="form.js"></script>
 <script src="share.js"></script>
 </body>
 </html>

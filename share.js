@@ -140,6 +140,7 @@
   }
 
   function shareMarkdown() {
+    if (window.memtofitReady && !window.memtofitReady()) return;
     var text = buildMarkdown();
     var filename = "MemtoFit-" + fileSlug() + ".md";
     var title = "MemtoFit questionnaire";
