@@ -247,7 +247,7 @@
 <main class="wrap">
 
 <h2>Part 1 - About you</h2>
-<p class="lead">Skip anything you do not know. Questions marked with * are needed to write a plan.</p>
+<p class="lead">Skip anything you do not know.</p>
 
 <div class="card" data-req="name">
   <label class="field req" for="name">Name</label>
@@ -347,26 +347,19 @@
   <label class="opt"><span>Maintain</span><input type="radio" name="nut"></label>
   <label class="opt"><span>Not sure</span><input type="radio" name="nut"></label>
 </div>
-<div class="card">
+<div class="card" data-req="muscles">
   <span class="q">Muscles you want to prioritize</span>
-  <p class="hint">Check a few. The others will still be trained enough to maintain.</p>
-  <label class="opt"><span>Chest</span><input type="checkbox"></label>
-  <label class="opt"><span>Back</span><input type="checkbox"></label>
-  <label class="opt"><span>Shoulders</span><input type="checkbox"></label>
-  <label class="opt"><span>Arms</span><input type="checkbox"></label>
-  <label class="opt"><span>Legs</span><input type="checkbox"></label>
-  <label class="opt"><span>Glutes</span><input type="checkbox"></label>
-  <label class="opt"><span>Core</span><input type="checkbox"></label>
-  <label class="opt"><span>Calves</span><input type="checkbox"></label>
-  <label class="opt"><span>Posture / upper back</span><input type="checkbox"></label>
-</div>
-<div class="card">
-  <span class="q">Training style you prefer</span>
-  <label class="opt"><span>Machines and cables</span><input type="checkbox"></label>
-  <label class="opt"><span>Dumbbells</span><input type="checkbox"></label>
-  <label class="opt"><span>Barbells</span><input type="checkbox"></label>
-  <label class="opt"><span>Bodyweight</span><input type="checkbox"></label>
-  <label class="opt"><span>No preference, mix as needed</span><input type="checkbox"></label>
+  <p class="hint">Pick up to 3. The others will still be trained enough to maintain.</p>
+  <label class="opt"><span>Chest</span><input type="checkbox" name="muscle"></label>
+  <label class="opt"><span>Back</span><input type="checkbox" name="muscle"></label>
+  <label class="opt"><span>Shoulders</span><input type="checkbox" name="muscle"></label>
+  <label class="opt"><span>Arms</span><input type="checkbox" name="muscle"></label>
+  <label class="opt"><span>Legs</span><input type="checkbox" name="muscle"></label>
+  <label class="opt"><span>Glutes</span><input type="checkbox" name="muscle"></label>
+  <label class="opt"><span>Core</span><input type="checkbox" name="muscle"></label>
+  <label class="opt"><span>Calves</span><input type="checkbox" name="muscle"></label>
+  <label class="opt"><span>Posture / upper back</span><input type="checkbox" name="muscle"></label>
+  <p class="err"></p>
 </div>
 
 <h2>Part 3 - Schedule and gym</h2>
@@ -483,7 +476,7 @@
 </div>
 
 <p class="note">Your answers are used only to build a training program that fits you. This is not a medical assessment. Feedback is welcome.</p>
-<p class="note">v1.6 · © 2026 memtoria.com</p>
+<p class="note">v1.7 · © 2026 memtoria.com</p>
 </main>
 <template id="lim-tpl">
   <div class="lim">

@@ -60,6 +60,16 @@
     else if (n && d < n) need(daysCard, false, "Pick at least as many days as sessions.");
     else need(daysCard, true, "");
 
+    var m = document.querySelectorAll('input[name="muscle"]:checked').length;
+    var mCard = document.querySelector('[data-req="muscles"]');
+    if (m > 3) {
+      ok = false;
+      setErr(mCard, "Pick up to 3.");
+      if (!first) first = mCard;
+    } else {
+      setErr(mCard, "");
+    }
+
     need(document.querySelector('[data-req="mins"]'), radioOn("mins"), "Choose one.");
     need(document.querySelector('[data-req="gym"]'), radioOn("gym"), "Choose one.");
 
