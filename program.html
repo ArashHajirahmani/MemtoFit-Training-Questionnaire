@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MemtoFit · Program</title>
+<style>
+  :root {
+    --raft-bg: #2C4A27;
+    --raft-bg-inv: #181F17;
+    --raft-accent: #FAAF58;
+    --raft-fg: #F2F2F2;
+    --paper: #f7f4ee;
+    --ink: #181F17;
+    --muted: #4a5a48;
+    --line: #d4d0c6;
+    --tap: 2.75rem;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font: 17px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  .hero {
+    background: var(--raft-bg);
+    color: var(--raft-fg);
+    padding: 1.35rem 1.1rem 1.5rem;
+    text-align: center;
+  }
+  a.brand {
+    display: block;
+    margin: 0 auto;
+    font-size: 1.35rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    color: var(--raft-accent);
+    line-height: 1.2;
+    text-decoration: none;
+  }
+  .hero h1 {
+    margin: 0.7rem 0 0.35rem;
+    font-size: 1.45rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--raft-fg);
+  }
+  .hero .sub {
+    margin: 0 auto;
+    max-width: 28rem;
+    color: var(--raft-fg);
+    opacity: 0.88;
+    font-size: 0.95rem;
+  }
+  .wrap { max-width: 40rem; margin: 0 auto; padding: 1rem 0.9rem 3rem; }
+  iframe {
+    display: block;
+    width: 100%;
+    min-height: 12rem;
+    border: 0;
+    background: #fff;
+  }
+  h2 {
+    margin: 1.4rem 0 0.7rem;
+    padding: 0.55rem 0.75rem;
+    background: var(--raft-bg);
+    color: var(--raft-fg);
+    font-size: 1.05rem;
+    border-radius: 0.55rem;
+  }
+  label {
+    display: block;
+    margin: 0.55rem 0 0.2rem;
+    font-size: 0.82rem;
+    font-weight: 650;
+    color: var(--muted);
+  }
+  input {
+    width: 100%;
+    min-height: var(--tap);
+    padding: 0.65rem 0.75rem;
+    border: 1.5px solid #c9c4b8;
+    border-radius: 0.55rem;
+    background: #fffdf8;
+    font: inherit;
+  }
+  button {
+    width: 100%;
+    min-height: var(--tap);
+    margin-top: 0.8rem;
+    border: 0;
+    border-radius: 0.7rem;
+    background: var(--raft-bg);
+    color: var(--raft-fg);
+    font: 600 0.95rem/1 system-ui, sans-serif;
+    cursor: pointer;
+  }
+  .log-list { margin: 0; padding: 0; list-style: none; }
+  .log-list li {
+    margin: 0 0 0.45rem;
+    padding: 0.65rem 0.75rem;
+    background: #fffdf8;
+    border: 1.5px solid var(--line);
+    border-radius: 0.55rem;
+  }
+  .status { margin: 0.75rem 0 0; text-align: center; color: var(--muted); font-size: 0.92rem; }
+  .status.bad { color: #b42318; }
+</style>
+</head>
+<body>
+<header class="hero">
+  <a class="brand" id="home-link" href="./">MemtoFit</a>
+  <h1>Program</h1>
+  <p class="sub" id="need-link" hidden>Open the link you were sent.</p>
+  <p class="sub" id="later" hidden>Available next month</p>
+</header>
+<main class="wrap" id="app" hidden>
+  <iframe id="plan-frame" title="Program"></iframe>
+  <p class="status" id="plan-status" hidden></p>
+  <section id="log-section">
+    <h2>Log</h2>
+    <ul class="log-list" id="log-list"></ul>
+    <form id="log-form">
+      <label for="log-week">Week</label>
+      <input id="log-week" type="text" inputmode="numeric">
+      <label for="log-weight">Weight</label>
+      <input id="log-weight" type="text" inputmode="decimal">
+      <label for="log-note">Note</label>
+      <input id="log-note" type="text">
+      <button type="submit">Save</button>
+    </form>
+    <p class="status" id="log-status"></p>
+  </section>
+</main>
+<script src="config.js"></script>
+<script src="gate.js"></script>
+<script src="crypto.js"></script>
+<script src="slot.js"></script>
+<script src="program.js"></script>
+</body>
+</html>

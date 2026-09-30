@@ -142,6 +142,7 @@
   function shareMarkdown() {
     if (window.memtofitReady && !window.memtofitReady()) return;
     var text = buildMarkdown();
+    var status = document.getElementById("save-status");
     var filename = "MemtoFit-" + fileSlug() + ".md";
     var title = "MemtoFit questionnaire";
     var file = null;
@@ -174,18 +175,40 @@
       });
     }
 
-    if (file && navigator.canShare) {
-      var withFile = { title: title, files: [file] };
-      if (navigator.canShare(withFile)) {
-        navigator.share(withFile).catch(function (err) {
-          if (err && err.name === "AbortError") return;
-          shareText();
-        });
-        return;
-      }
+    function mark(ok) {
+      if (!status) return;
+      status.hidden = false;
+      status.classList.toggle("bad", !ok);
+      status.textContent = ok ? "Saved." : "Could not save. Try Share again.";
     }
 
-    shareText();
+    function continueShare() {
+      if (file && navigator.canShare) {
+        var withFile = { title: title, files: [file] };
+        if (navigator.canShare(withFile)) {
+          navigator.share(withFile).catch(function (err) {
+            if (err && err.name === "AbortError") return;
+            shareText();
+          });
+          return;
+        }
+      }
+      shareText();
+    }
+
+    var session = window.memtofitSession;
+    if (!session || !window.memtofitSlot || !window.memtofitGate) {
+      mark(false);
+      continueShare();
+      return;
+    }
+    window.memtofitSlot.saveAnswers(session, window.memtofitGate.name(), text).then(function () {
+      mark(true);
+      continueShare();
+    }, function () {
+      mark(false);
+      continueShare();
+    });
   }
 
   var btn = document.getElementById("share-btn");
