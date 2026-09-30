@@ -1,5 +1,7 @@
 (function () {
-  var NAME_KEY = "memtofit-name";
+  var LEGACY_NAME = "memtofit-name";
+  var currentId = "";
+  var currentName = "";
 
   var style = document.createElement("style");
   style.textContent = [
@@ -7,8 +9,10 @@
     "#name-gate[hidden]{display:none}",
     "#name-gate form{width:min(22rem,100%);margin:0;padding:1.2rem 1.1rem 1.15rem;background:#f7f4ee;border-radius:0.8rem}",
     "#name-gate p{margin:0 0 0.75rem;font:700 1.15rem/1.3 system-ui,sans-serif;color:#181F17}",
+    "#name-gate .err{margin:-0.2rem 0 0.75rem;font:600 0.92rem/1.35 system-ui,sans-serif;color:#b42318}",
     "#name-gate input{width:100%;min-height:2.75rem;padding:0.65rem 0.75rem;border:1.5px solid #c9c4b8;border-radius:0.55rem;background:#fffdf8;font:inherit}",
-    "#name-gate button{width:100%;min-height:2.75rem;margin-top:0.7rem;border:0;border-radius:0.7rem;background:#2C4A27;color:#F2F2F2;font:600 0.95rem/1 system-ui,sans-serif;cursor:pointer}"
+    "#name-gate button{width:100%;min-height:2.75rem;margin-top:0.7rem;border:0;border-radius:0.7rem;background:#2C4A27;color:#F2F2F2;font:600 0.95rem/1 system-ui,sans-serif;cursor:pointer}",
+    "#name-gate button:disabled{opacity:0.6;cursor:default}"
   ].join("");
   document.head.appendChild(style);
 
@@ -16,76 +20,169 @@
     return String(value || "").toLowerCase().replace(/\s+/g, "");
   }
 
-  function parseHash() {
-    var raw = location.hash.replace(/^#/, "").trim();
-    var dot = raw.indexOf(".");
-    if (dot < 1) return null;
-    var id = raw.slice(0, dot);
-    var token = raw.slice(dot + 1);
-    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) return null;
-    if (!/^[0-9a-f]{16,}$/i.test(token)) return null;
-    return { id: id, token: token };
+  function parseId() {
+    var raw = location.hash.replace(/^#/, "").trim().split(".")[0];
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(raw)) return "";
+    return raw.toLowerCase();
   }
 
-  function savedName() {
+  function storeKey(id) {
+    return "memtofit-slot-" + id;
+  }
+
+  function savedName(id) {
     try {
-      return localStorage.getItem(NAME_KEY) || "";
+      return localStorage.getItem(storeKey(id)) || "";
     } catch (err) {
       return "";
     }
   }
 
-  function storeName(name) {
-    localStorage.setItem(NAME_KEY, name);
+  function remember(id, name, token) {
+    try {
+      localStorage.setItem(storeKey(id), name);
+      localStorage.removeItem(LEGACY_NAME);
+    } catch (err) {}
+    var secure = location.protocol === "https:" ? "; Secure" : "";
+    document.cookie = "memtofit-" + id + "=" + encodeURIComponent(token) +
+      "; Path=/; Max-Age=31536000; SameSite=Lax" + secure;
   }
 
-  var pending = null;
+  function forget(id) {
+    try {
+      localStorage.removeItem(storeKey(id));
+    } catch (err) {}
+    document.cookie = "memtofit-" + id + "=; Path=/; Max-Age=0; SameSite=Lax";
+  }
 
-  function askName(force) {
-    if (!force && savedName()) return Promise.resolve(savedName());
-    if (pending) return pending;
-    pending = new Promise(function (resolve) {
-      var overlay = document.getElementById("name-gate");
-      if (!overlay) {
-        overlay = document.createElement("div");
-        overlay.id = "name-gate";
-        overlay.innerHTML = '<form><p>What\u2019s your name?</p><input id="name-gate-input" type="text" autocomplete="name"><button type="submit">Continue</button></form>';
-        document.body.appendChild(overlay);
+  function deriveToken(name) {
+    return crypto.subtle.digest("SHA-256", new TextEncoder().encode(name)).then(function (buf) {
+      var bytes = new Uint8Array(buf);
+      var hex = "";
+      for (var i = 0; i < bytes.length; i++) {
+        var h = bytes[i].toString(16);
+        if (h.length < 2) hex += "0";
+        hex += h;
       }
-      overlay.hidden = false;
-      var form = overlay.querySelector("form");
-      var input = overlay.querySelector("input");
-      input.value = "";
+      return hex;
+    });
+  }
+
+  function useShortHash(id) {
+    var next = "#" + id;
+    if (location.hash.toLowerCase() === next) return;
+    history.replaceState(null, "", location.pathname + location.search + next);
+  }
+
+  function overlay() {
+    var el = document.getElementById("name-gate");
+    if (el) return el;
+    el = document.createElement("div");
+    el.id = "name-gate";
+    el.innerHTML = '<form><p>What\u2019s your name?</p><p class="err" id="name-gate-error" hidden></p><input id="name-gate-input" type="text" autocomplete="name"><button type="submit">Continue</button></form>';
+    document.body.appendChild(el);
+    return el;
+  }
+
+  function showError(el, text) {
+    var err = el.querySelector(".err");
+    err.hidden = !text;
+    err.textContent = text || "";
+  }
+
+  function openWith(id, name) {
+    return deriveToken(name).then(function (token) {
+      var session = { id: id, token: token, name: name };
+      return window.memtofitSlot.load(session).then(function (row) {
+        session.row = row;
+        remember(id, name, token);
+        return session;
+      });
+    });
+  }
+
+  function prompt(id, message) {
+    var el = overlay();
+    el.hidden = false;
+    showError(el, message);
+    var form = el.querySelector("form");
+    var input = el.querySelector("input");
+    var button = el.querySelector("button");
+    input.value = "";
+    input.focus();
+    return new Promise(function (resolve) {
       function onSubmit(e) {
         e.preventDefault();
         var name = normalizeName(input.value);
         if (!name) return;
-        storeName(name);
-        overlay.hidden = true;
-        form.removeEventListener("submit", onSubmit);
-        pending = null;
-        resolve(name);
+        button.disabled = true;
+        openWith(id, name).then(function (session) {
+          form.removeEventListener("submit", onSubmit);
+          el.hidden = true;
+          button.disabled = false;
+          resolve(session);
+        }, function (err) {
+          button.disabled = false;
+          if (err && err.denied) showError(el, "That name does not open this link.");
+          else showError(el, "Could not reach the server. Try again.");
+          input.focus();
+        });
       }
       form.addEventListener("submit", onSubmit);
-      input.focus();
     });
-    return pending;
+  }
+
+  function unlock(id) {
+    var name = savedName(id);
+    if (!name) return prompt(id, "");
+    return openWith(id, name).catch(function (err) {
+      if (err && err.denied) {
+        forget(id);
+        return prompt(id, "That name does not open this link.");
+      }
+      return prompt(id, "Could not reach the server. Try again.");
+    });
+  }
+
+  function bind(session) {
+    currentId = session.id;
+    currentName = session.name;
+    useShortHash(session.id);
+    var home = document.getElementById("home-link");
+    if (home) home.hash = session.id;
+    if (window.memtofitSession && window.memtofitSession.id === session.id) {
+      window.memtofitSession.token = session.token;
+      window.memtofitSession.name = session.name;
+      window.memtofitSession.row = session.row;
+    }
+    return session;
   }
 
   function start() {
-    var slot = parseHash();
-    if (!slot) return Promise.resolve(null);
-    return askName(false).then(function (name) {
-      var home = document.getElementById("home-link");
-      if (home) home.hash = location.hash;
-      return { id: slot.id, token: slot.token, name: name };
+    var id = parseId();
+    if (!id) return Promise.resolve(null);
+    try { localStorage.removeItem(LEGACY_NAME); } catch (err) {}
+    return unlock(id).then(bind);
+  }
+
+  window.addEventListener("hashchange", function () {
+    var id = parseId();
+    if (id && id !== currentId) location.reload();
+  });
+
+  function askName(force) {
+    if (!force && currentName) return Promise.resolve(currentName);
+    if (!currentId) return Promise.resolve("");
+    if (force) forget(currentId);
+    return prompt(currentId, force ? "Type the name for this link." : "").then(function (session) {
+      return bind(session).name;
     });
   }
 
   window.memtofitGate = {
     start: start,
     askName: askName,
-    name: savedName,
+    name: function () { return currentName || (currentId ? savedName(currentId) : ""); },
     normalizeName: normalizeName
   };
 })();

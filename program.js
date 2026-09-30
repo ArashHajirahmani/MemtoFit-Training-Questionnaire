@@ -83,13 +83,8 @@
     frame.srcdoc = html;
   }
 
-  function openPlan(plan, attempt) {
-    return memtofitCrypto.decryptPlan(memtofitGate.name(), plan).catch(function () {
-      if (attempt > 0) throw new Error("bad name");
-      return memtofitGate.askName(true).then(function () {
-        return openPlan(plan, attempt + 1);
-      });
-    });
+  function openPlan(plan, name) {
+    return memtofitCrypto.decryptPlan(name, plan);
   }
 
   function setStatus(el, text, bad) {
@@ -103,12 +98,13 @@
       need.hidden = false;
       return;
     }
-    return memtofitSlot.load(session).then(function (row) {
+    var loaded = session.row ? Promise.resolve(session.row) : memtofitSlot.load(session);
+    return loaded.then(function (row) {
       if (!row || !row.plan) {
         later.hidden = false;
         return;
       }
-      return openPlan(row.plan, 0).then(function (html) {
+      return openPlan(row.plan, session.name).then(function (html) {
         app.hidden = false;
         showPlan(html);
         var entries = merge(asList(row.log), readLocal(session.id));

@@ -125,7 +125,8 @@ memtofitGate.start().then(function (session) {
   var program = document.getElementById("program-link");
   questionnaire.href = "questionnaire.html" + hash;
   program.href = "program.html" + hash;
-  return memtofitSlot.load(session).then(function (row) {
+  var pending = session.row ? Promise.resolve(session.row) : memtofitSlot.load(session);
+  return pending.then(function (row) {
     if (row && row.plan) {
       program.classList.remove("is-disabled");
       program.removeAttribute("aria-disabled");

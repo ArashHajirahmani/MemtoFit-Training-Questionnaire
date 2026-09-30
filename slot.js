@@ -14,7 +14,14 @@
       signal: ctrl.signal
     }).then(function (res) {
       clearTimeout(timer);
-      if (!res.ok) throw new Error("request failed");
+      if (!res.ok) {
+        return res.text().then(function (text) {
+          var err = new Error("request failed");
+          err.status = res.status;
+          err.denied = text.indexOf("not allowed") !== -1;
+          throw err;
+        });
+      }
       if (res.status === 204) return null;
       return res.text().then(function (text) {
         if (!text) return null;
