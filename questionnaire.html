@@ -531,11 +531,11 @@
   });
 })();
 </script>
-<script src="config.js"></script>
-<script src="gate.js"></script>
-<script src="slot.js"></script>
-<script src="form.js"></script>
-<script src="share.js"></script>
+<script src="config.js?v=3"></script>
+<script src="gate.js?v=3"></script>
+<script src="slot.js?v=3"></script>
+<script src="form.js?v=3"></script>
+<script src="share.js?v=3"></script>
 <script>
 memtofitGate.start().then(function (session) {
   if (!session) {
@@ -546,7 +546,6 @@ memtofitGate.start().then(function (session) {
     return;
   }
   window.memtofitSession = session;
-  document.getElementById("home-link").hash = location.hash;
 });
 </script>
 </body>

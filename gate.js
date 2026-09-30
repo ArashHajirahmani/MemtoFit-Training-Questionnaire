@@ -20,10 +20,18 @@
     return String(value || "").toLowerCase().replace(/\s+/g, "");
   }
 
-  function parseId() {
-    var raw = location.hash.replace(/^#/, "").trim().split(".")[0];
+  function asId(raw) {
+    raw = String(raw || "").trim().split(".")[0];
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(raw)) return "";
     return raw.toLowerCase();
+  }
+
+  function parseId() {
+    var fromQuery = "";
+    try {
+      fromQuery = new URLSearchParams(location.search).get("s") || "";
+    } catch (err) {}
+    return asId(fromQuery) || asId(location.hash.replace(/^#/, ""));
   }
 
   function storeKey(id) {
@@ -68,10 +76,10 @@
     });
   }
 
-  function useShortHash(id) {
-    var next = "#" + id;
-    if (location.hash.toLowerCase() === next) return;
-    history.replaceState(null, "", location.pathname + location.search + next);
+  function useSlotUrl(id) {
+    var next = location.pathname + "?s=" + id;
+    if (location.pathname + location.search === next && !location.hash) return;
+    history.replaceState(null, "", next);
   }
 
   function overlay() {
@@ -147,9 +155,9 @@
   function bind(session) {
     currentId = session.id;
     currentName = session.name;
-    useShortHash(session.id);
+    useSlotUrl(session.id);
     var home = document.getElementById("home-link");
-    if (home) home.hash = session.id;
+    if (home) home.href = "./?s=" + session.id;
     if (window.memtofitSession && window.memtofitSession.id === session.id) {
       window.memtofitSession.token = session.token;
       window.memtofitSession.name = session.name;

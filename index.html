@@ -108,9 +108,9 @@
     <p class="hint" id="program-note">Available next month</p>
   </div>
 </main>
-<script src="config.js"></script>
-<script src="gate.js"></script>
-<script src="slot.js"></script>
+<script src="config.js?v=3"></script>
+<script src="gate.js?v=3"></script>
+<script src="slot.js?v=3"></script>
 <script>
 memtofitGate.start().then(function (session) {
   var need = document.getElementById("need-link");
@@ -120,11 +120,10 @@ memtofitGate.start().then(function (session) {
     return;
   }
   choices.hidden = false;
-  var hash = location.hash;
   var questionnaire = document.getElementById("questionnaire-link");
   var program = document.getElementById("program-link");
-  questionnaire.href = "questionnaire.html" + hash;
-  program.href = "program.html" + hash;
+  questionnaire.href = "questionnaire.html?s=" + session.id;
+  program.href = "program.html?s=" + session.id;
   var pending = session.row ? Promise.resolve(session.row) : memtofitSlot.load(session);
   return pending.then(function (row) {
     if (row && row.plan) {
