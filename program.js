@@ -79,6 +79,12 @@
   }
 
   function showPlan(html) {
+    if (/^\s*(<!doctype|<html)/i.test(html)) {
+      document.body.classList.add("plan-doc");
+      frame.classList.add("full");
+      frame.srcdoc = html;
+      return;
+    }
     frame.addEventListener("load", fitFrame);
     frame.srcdoc = html;
   }
