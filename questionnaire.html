@@ -531,11 +531,11 @@
   });
 })();
 </script>
-<script src="config.js?v=3"></script>
-<script src="gate.js?v=3"></script>
-<script src="slot.js?v=3"></script>
-<script src="form.js?v=3"></script>
-<script src="share.js?v=3"></script>
+<script src="config.js?v=4"></script>
+<script src="gate.js?v=4"></script>
+<script src="slot.js?v=4"></script>
+<script src="form.js?v=4"></script>
+<script src="share.js?v=5"></script>
 <script>
 memtofitGate.start().then(function (session) {
   if (!session) {
@@ -546,6 +546,9 @@ memtofitGate.start().then(function (session) {
     return;
   }
   window.memtofitSession = session;
+  if (session.row && session.row.answers && window.memtofitFill) {
+    window.memtofitFill(session.row.answers);
+  }
 });
 </script>
 </body>

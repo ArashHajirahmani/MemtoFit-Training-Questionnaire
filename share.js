@@ -211,6 +211,125 @@
     });
   }
 
+  function setSelect(select, value) {
+    value = compact(value);
+    for (var i = 0; i < select.options.length; i++) {
+      if (compact(select.options[i].text) === value || select.options[i].value === value) {
+        select.selectedIndex = i;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function setLabeled(label, value) {
+    var labels = document.querySelectorAll("label.field");
+    for (var i = 0; i < labels.length; i++) {
+      if (labels[i].closest(".lim")) continue;
+      if (compact(labels[i].textContent) !== label) continue;
+      var id = labels[i].getAttribute("for");
+      var input = id ? document.getElementById(id) : null;
+      if (!input) continue;
+      if (input.tagName === "SELECT") {
+        setSelect(input, value);
+        return;
+      }
+      var unit = document.getElementById(input.id + "-unit");
+      if (unit) {
+        var bits = value.split(" ");
+        var unitText = bits.length > 1 ? bits.pop() : "";
+        input.value = bits.join(" ");
+        if (unitText) setSelect(unit, unitText);
+      } else {
+        input.value = value;
+      }
+      return;
+    }
+  }
+
+  function setChoice(label, value) {
+    var titles = document.querySelectorAll(".q");
+    for (var i = 0; i < titles.length; i++) {
+      if (compact(titles[i].textContent) !== label) continue;
+      var card = titles[i].closest(".card");
+      if (!card) return;
+      var inputs = card.querySelectorAll('input[type="radio"], input[type="checkbox"]');
+      var wanted = [value];
+      var exact = false;
+      for (var j = 0; j < inputs.length; j++) {
+        if (optionLabel(inputs[j]) === value) exact = true;
+      }
+      if (!exact) wanted = value.split(", ");
+      for (var k = 0; k < inputs.length; k++) {
+        var text = optionLabel(inputs[k]);
+        for (var w = 0; w < wanted.length; w++) {
+          if (text === wanted[w]) inputs[k].checked = true;
+        }
+      }
+      return;
+    }
+  }
+
+  function addLimitation(line) {
+    var list = document.getElementById("lim-list");
+    var add = document.getElementById("add-lim");
+    if (!list) return;
+    var blocks = list.querySelectorAll(".lim");
+    var block = blocks[blocks.length - 1];
+    var inputs = block.querySelectorAll("input, select");
+    if (inputs[0].value && add) {
+      add.click();
+      blocks = list.querySelectorAll(".lim");
+      block = blocks[blocks.length - 1];
+      inputs = block.querySelectorAll("input, select");
+    }
+    var parts = line.split("; ");
+    inputs[0].value = parts[0] === "(not specified)" ? "" : parts[0];
+    if (parts.length === 3) {
+      setSelect(inputs[1], parts[1]);
+      setSelect(inputs[2], parts[2]);
+    } else if (parts.length === 2) {
+      if (!setSelect(inputs[1], parts[1])) setSelect(inputs[2], parts[1]);
+    }
+  }
+
+  function fillAnswers(markdown) {
+    var lines = String(markdown || "").replace(/\r\n/g, "\n").split("\n");
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i];
+      var match = line.match(/^- \*\*(.+?):\*\*(?: (.*))?$/);
+      if (match) {
+        var label = match[1];
+        var value = match[2];
+        if (!value) {
+          var buf = [];
+          i += 1;
+          if (lines[i] === "") i += 1;
+          while (i < lines.length && lines[i] !== "" && lines[i].indexOf("- **") !== 0 && lines[i].indexOf("## ") !== 0) {
+            buf.push(lines[i]);
+            i += 1;
+          }
+          i -= 1;
+          setLabeled(label, buf.join("\n"));
+        } else {
+          var labels = document.querySelectorAll("label.field");
+          var labeled = false;
+          for (var L = 0; L < labels.length; L++) {
+            if (!labels[L].closest(".lim") && compact(labels[L].textContent) === label) labeled = true;
+          }
+          if (labeled) setLabeled(label, value);
+          else setChoice(label, value);
+        }
+        continue;
+      }
+      if (line.indexOf("- ") === 0) addLimitation(line.slice(2));
+    }
+    var main = document.querySelector("main.wrap");
+    if (main) main.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+
+  window.memtofitFill = fillAnswers;
+
   var btn = document.getElementById("share-btn");
   if (btn) btn.addEventListener("click", shareMarkdown);
 })();
