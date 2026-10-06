@@ -70,54 +70,6 @@
     min-height: 100dvh;
     background: #F7F6F1;
   }
-  body.plan-doc #log-section {
-    max-width: 40rem;
-    margin: 0 auto;
-    padding: 1rem 0.9rem 3rem;
-  }
-  h2 {
-    margin: 1.4rem 0 0.7rem;
-    padding: 0.55rem 0.75rem;
-    background: var(--raft-bg);
-    color: var(--raft-fg);
-    font-size: 1.05rem;
-    border-radius: 0.55rem;
-  }
-  label {
-    display: block;
-    margin: 0.55rem 0 0.2rem;
-    font-size: 0.82rem;
-    font-weight: 650;
-    color: var(--muted);
-  }
-  input {
-    width: 100%;
-    min-height: var(--tap);
-    padding: 0.65rem 0.75rem;
-    border: 1.5px solid #c9c4b8;
-    border-radius: 0.55rem;
-    background: #fffdf8;
-    font: inherit;
-  }
-  button {
-    width: 100%;
-    min-height: var(--tap);
-    margin-top: 0.8rem;
-    border: 0;
-    border-radius: 0.7rem;
-    background: var(--raft-bg);
-    color: var(--raft-fg);
-    font: 600 0.95rem/1 system-ui, sans-serif;
-    cursor: pointer;
-  }
-  .log-list { margin: 0; padding: 0; list-style: none; }
-  .log-list li {
-    margin: 0 0 0.45rem;
-    padding: 0.65rem 0.75rem;
-    background: #fffdf8;
-    border: 1.5px solid var(--line);
-    border-radius: 0.55rem;
-  }
   .status { margin: 0.75rem 0 0; text-align: center; color: var(--muted); font-size: 0.92rem; }
   .status.bad { color: #b42318; }
 </style>
@@ -132,25 +84,11 @@
 <main class="wrap" id="app" hidden>
   <iframe id="plan-frame" title="Program"></iframe>
   <p class="status" id="plan-status" hidden></p>
-  <section id="log-section">
-    <h2>Log</h2>
-    <ul class="log-list" id="log-list"></ul>
-    <form id="log-form">
-      <label for="log-week">Week</label>
-      <input id="log-week" type="text" inputmode="numeric">
-      <label for="log-weight">Weight</label>
-      <input id="log-weight" type="text" inputmode="decimal">
-      <label for="log-note">Note</label>
-      <input id="log-note" type="text">
-      <button type="submit">Save</button>
-    </form>
-    <p class="status" id="log-status"></p>
-  </section>
 </main>
 <script src="config.js?v=4"></script>
 <script src="gate.js?v=4"></script>
 <script src="crypto.js?v=4"></script>
 <script src="slot.js?v=4"></script>
-<script src="program.js?v=5"></script>
+<script src="program.js?v=6"></script>
 </body>
 </html>

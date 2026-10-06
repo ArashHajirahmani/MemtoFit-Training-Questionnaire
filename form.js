@@ -72,6 +72,7 @@
 
     need(document.querySelector('[data-req="mins"]'), radioOn("mins"), "Choose one.");
     need(document.querySelector('[data-req="gym"]'), radioOn("gym"), "Choose one.");
+    need(document.querySelector('[data-req="wunit"]'), radioOn("wunit"), "Choose pounds or metric.");
 
     var flag = ok ? "false" : "true";
     if (printBtn) printBtn.setAttribute("aria-disabled", flag);

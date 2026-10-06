@@ -428,6 +428,13 @@
   <input id="gymname" type="text">
   <p class="err"></p>
 </div>
+<div class="card" data-req="wunit">
+  <span class="q req">Weight unit</span>
+  <p class="hint">Pounds or metric, whichever the plates and machines use.</p>
+  <label class="opt"><span>Pounds (lb)</span><input type="radio" name="wunit"></label>
+  <label class="opt"><span>Metric (kg)</span><input type="radio" name="wunit"></label>
+  <p class="err"></p>
+</div>
 
 <h2>Part 4 - Limitations</h2>
 <p class="lead">Tell us what we should be careful with. We will adjust the exercise (weight, range, or a swap) rather than drop it unless we must. If something is severe, we wait for clearance before writing a plan.</p>
@@ -534,7 +541,7 @@
 <script src="config.js?v=4"></script>
 <script src="gate.js?v=4"></script>
 <script src="slot.js?v=4"></script>
-<script src="form.js?v=4"></script>
+<script src="form.js?v=5"></script>
 <script src="share.js?v=5"></script>
 <script>
 memtofitGate.start().then(function (session) {
