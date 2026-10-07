@@ -11,6 +11,29 @@
     return "memtofit-log-" + id;
   }
 
+  function placeKey(id) {
+    return "memtofit-place-" + id;
+  }
+
+  function readPlace() {
+    if (!session) return { week: 0, day: 0 };
+    try {
+      var parsed = JSON.parse(sessionStorage.getItem(placeKey(session.id)) || "null");
+      if (!parsed || typeof parsed.week !== "number" || typeof parsed.day !== "number") return { week: 0, day: 0 };
+      if (parsed.week < 0 || parsed.day < 0) return { week: 0, day: 0 };
+      return { week: parsed.week, day: parsed.day };
+    } catch (err) {
+      return { week: 0, day: 0 };
+    }
+  }
+
+  function writePlace(week, day) {
+    if (!session) return;
+    try {
+      sessionStorage.setItem(placeKey(session.id), JSON.stringify({ week: week, day: day }));
+    } catch (err) {}
+  }
+
   function readLocal(id) {
     try {
       var parsed = JSON.parse(localStorage.getItem(logKey(id)) || "null");
@@ -38,7 +61,42 @@
     return rec && rec.at ? rec.at : "";
   }
 
-  function mergeMaps(server, local) {
+  function score(raw) {
+    var n = parseFloat(String(raw == null ? "" : raw).replace(",", "."));
+    return isFinite(n) ? n : null;
+  }
+
+  function bestText(rec) {
+    if (!rec) return "";
+    if (rec.best != null && rec.best !== "") return String(rec.best);
+    if (rec.v != null && rec.v !== "") return String(rec.v);
+    return "";
+  }
+
+  function withBest(prev, value) {
+    var next = score(value);
+    var oldText = bestText(prev);
+    var old = score(oldText);
+    var best = value;
+    if (old != null && (next == null || next < old)) best = oldText;
+    return { v: value, at: new Date().toISOString(), best: best };
+  }
+
+  function mergeLoad(a, b) {
+    var chosen = stamp(a) >= stamp(b) ? a : b;
+    var out = { v: chosen.v, at: chosen.at || "" };
+    var textA = bestText(a);
+    var textB = bestText(b);
+    var bestA = score(textA);
+    var bestB = score(textB);
+    if (bestA == null && bestB == null) return out;
+    if (bestB == null || (bestA != null && bestA > bestB)) out.best = textA;
+    else if (bestA == null || bestB > bestA) out.best = textB;
+    else out.best = stamp(a) >= stamp(b) ? textA : textB;
+    return out;
+  }
+
+  function mergeMaps(server, local, keepBest) {
     var out = {};
     var seen = {};
     var key;
@@ -49,6 +107,7 @@
     for (key in seen) {
       if (!server[key]) out[key] = local[key];
       else if (!local[key]) out[key] = server[key];
+      else if (keepBest) out[key] = mergeLoad(server[key], local[key]);
       else out[key] = stamp(server[key]) >= stamp(local[key]) ? server[key] : local[key];
     }
     return out;
@@ -100,17 +159,28 @@
     persist();
   }
 
+  function putLoad(key, value) {
+    if (!key) return;
+    value = String(value || "").trim();
+    if (!value) return;
+    state.loads[key] = withBest(state.loads[key], value);
+    persist();
+  }
+
   function sendHydrate() {
     var win = frame.contentWindow;
     if (!win) return;
-    win.postMessage({ type: "memtofit-hydrate", data: snapshot() }, "*");
+    win.postMessage({ type: "memtofit-hydrate", data: snapshot(), place: readPlace() }, "*");
   }
 
   function onMessage(e) {
     if (!frame.contentWindow || e.source !== frame.contentWindow) return;
     var msg = e.data || {};
     if (msg.type === "memtofit-ready") sendHydrate();
-    if (msg.type === "memtofit-save-load") put(state.loads, msg.key, String(msg.value || "").trim());
+    if (msg.type === "memtofit-place" && typeof msg.week === "number" && typeof msg.day === "number") {
+      writePlace(msg.week, msg.day);
+    }
+    if (msg.type === "memtofit-save-load") putLoad(msg.key, String(msg.value || "").trim());
     if (msg.type === "memtofit-save-day") put(state.days, msg.key, String(msg.value || "").trim());
   }
 
@@ -145,7 +215,7 @@
       }
       var server = asObject(row.log) || {};
       var local = asObject(readLocal(session.id)) || {};
-      var loads = mergeMaps(server.loads, local.loads);
+      var loads = mergeMaps(server.loads, local.loads, true);
       var days = mergeMaps(server.days, local.days);
       state = {
         unit: unitFromAnswers(row.answers) || (server.unit === "kg" ? "kg" : "lb"),

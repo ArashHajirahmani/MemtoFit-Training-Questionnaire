@@ -220,7 +220,8 @@ def yt(name):
 
 
 def link(name):
-    return f'<a href="{html.escape(yt(name), quote=True)}">{html.escape(name)}</a>'
+    href = html.escape(yt(name), quote=True)
+    return f'<a href="{href}" target="_blank" rel="noopener noreferrer">{html.escape(name)}</a>'
 
 
 def slug(names):
@@ -303,8 +304,35 @@ def row_html(groups, join_word, hints, sets, note, key, pair=False):
     )
 
 
+MONTH_NUM = {
+    "jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
+    "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12,
+}
+
+
 def month_name(token):
     return MONTHS.get(token[:3].lower(), token)
+
+
+def iso_date(line):
+    match = re.search(
+        r"\b(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|"
+        r"Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)"
+        r"\s+(\d{1,2}),?\s+(20\d{2})",
+        line or "",
+        re.I,
+    )
+    if not match:
+        return ""
+    month = MONTH_NUM.get(match.group(1)[:3].lower())
+    if not month:
+        return ""
+    return f"{int(match.group(3)):04d}-{month:02d}-{int(match.group(2)):02d}"
+
+
+def week_total(line):
+    match = re.search(r"\b(\d+)\s+weeks\b", line or "", re.I)
+    return match.group(1) if match else ""
 
 
 def find_month(line):
@@ -343,7 +371,7 @@ def parse_gym(text):
             finish = line
             continue
         if line.startswith("**Goal:**") and not weeks and current is None:
-            goal = line.split(":", 1)[1].strip()
+            goal = line.split(":", 1)[1].strip().lstrip("*").strip()
             continue
         number = week_number(line) if line.startswith("WEEK") or line.startswith("**WEEK") else None
         if number and not line.startswith("##"):
@@ -518,6 +546,8 @@ def render(plan, notes, person, slot):
         "{{DESCRIPTION}}": html.escape(f"{nice}{apos}s personalized gym plan."),
         "{{H1_HTML}}": h1,
         "{{PERIOD}}": html.escape(period),
+        "{{START_DATE}}": html.escape(iso_date(plan["start"])),
+        "{{WEEK_TOTAL}}": html.escape(week_total(plan["finish"])),
         "{{GOAL}}": html.escape(goal),
         "{{STORAGE_KEY}}": html.escape(f"memtofit-done-{slot}"),
         "{{WEEK_BUTTONS}}": "\n    ".join(week_buttons),

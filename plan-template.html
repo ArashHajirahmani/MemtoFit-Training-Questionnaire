@@ -23,11 +23,15 @@ h1 .info{margin-left:8px;position:relative;top:-6px}
 .day-note-wrap{margin:14px 2px 0}
 .day-note-wrap span{display:block;margin:0 0 4px;color:var(--muted);font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
 .day-note{width:100%;min-height:4.6rem;padding:10px 12px;border:1.5px solid var(--line);border-radius:12px;background:#fff;color:var(--ink);font:inherit;font-size:15px;font-weight:500;resize:vertical}
+.week-dots{display:flex;flex-wrap:wrap;gap:7px;margin:10px 0 0;padding:0}
+.week-dots[hidden]{display:none}
+.week-dots span{width:9px;height:9px;box-sizing:border-box;border:1.5px solid var(--amber);border-radius:50%;background:transparent}
+.week-dots span.on{background:var(--amber)}
 @media(max-width:420px){.load{width:3.2rem}}
 </style>
 </head>
 <body data-storage-key="{{STORAGE_KEY}}">
-<header class="hero"><div class="inner"><h1>{{H1_HTML}}</h1><p class="brand">MemtoFit</p><p class="period">{{PERIOD}}</p><p class="goal">{{GOAL}}</p></div></header>
+<header class="hero"><div class="inner"><h1>{{H1_HTML}}</h1><p class="brand">MemtoFit</p><p class="period">{{PERIOD}}</p><p class="week-dots" data-start="{{START_DATE}}" data-weeks="{{WEEK_TOTAL}}" role="img" hidden></p><p class="goal">{{GOAL}}</p></div></header>
 <nav class="sticky" aria-label="Choose week and workout">
   <div class="nav weeks" role="tablist" aria-label="Training week">
     {{WEEK_BUTTONS}}
@@ -56,6 +60,12 @@ h1 .info{margin-left:8px;position:relative;top:-6px}
     const distance = Math.max(0, nav.getBoundingClientRect().top);
     if (distance > 0) window.scrollBy({ top: distance, behavior: "smooth" });
   }
+  function clampIndex(value, length) {
+    const n = Number(value);
+    if (!length || !Number.isFinite(n) || n < 0) return 0;
+    if (n >= length) return length - 1;
+    return n;
+  }
   function update() {
     weekTabs.forEach((b, i) => {
       b.setAttribute("aria-selected", String(i === week));
@@ -67,6 +77,46 @@ h1 .info{margin-left:8px;position:relative;top:-6px}
       b.tabIndex = i === day ? 0 : -1;
     });
     panels.forEach((p, i) => { p.hidden = i !== week * dayCount + day; });
+  }
+  function calendarWeek(startISO) {
+    const parts = startISO.split("-");
+    if (parts.length !== 3) return 0;
+    const start = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+    const today = new Date();
+    const startMid = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+    const todayMid = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    if (todayMid < startMid) return 0;
+    const days = Math.round((todayMid - startMid) / 86400000);
+    return Math.floor(days / 7) + 1;
+  }
+  function paintDots() {
+    const el = document.querySelector(".week-dots");
+    if (!el) return;
+    const total = parseInt(el.dataset.weeks, 10);
+    const start = el.dataset.start || "";
+    if (!total || total < 1 || !/^\d{4}-\d{2}-\d{2}$/.test(start)) {
+      el.hidden = true;
+      el.replaceChildren();
+      el.removeAttribute("aria-label");
+      return;
+    }
+    const current = calendarWeek(start);
+    const filled = Math.max(0, Math.min(total, current));
+    el.replaceChildren();
+    for (let i = 0; i < total; i++) {
+      const dot = document.createElement("span");
+      dot.setAttribute("aria-hidden", "true");
+      if (i < filled) dot.className = "on";
+      el.appendChild(dot);
+    }
+    el.setAttribute("aria-label", current < 1 ? "Before week 1 of " + total : "Week " + filled + " of " + total);
+    el.hidden = false;
+  }
+  function applyPlace(nextWeek, nextDay, report) {
+    week = clampIndex(nextWeek, weekTabs.length || 1);
+    day = clampIndex(nextDay, dayTabs.length || 1);
+    update();
+    if (report) tell({ type: "memtofit-place", week: week, day: day });
   }
 
   const storageKey = document.body.dataset.storageKey;
@@ -132,11 +182,14 @@ h1 .info{margin-left:8px;position:relative;top:-6px}
       }
       wrap.append(time);
       cell.replaceChildren(wrap);
+      function hint(input) {
+        return input.dataset.best ? input.dataset.best + " " + unitLabel : unitLabel;
+      }
       function showLog(focus) {
         if (!load) return;
         load.hidden = false;
         load.value = "";
-        load.placeholder = load.dataset.last || unitLabel;
+        load.placeholder = hint(load);
         if (focus) load.focus();
       }
       check.addEventListener("change", () => {
@@ -164,10 +217,13 @@ h1 .info{margin-left:8px;position:relative;top:-6px}
           const v = numeric(load.value).replace(/\.$/, "");
           load.value = v;
           if (!v) {
-            load.placeholder = load.dataset.last || unitLabel;
+            load.placeholder = hint(load);
             return;
           }
-          load.dataset.last = v;
+          const next = parseFloat(v);
+          const prev = load.dataset.best ? parseFloat(load.dataset.best) : NaN;
+          if (!Number.isFinite(prev) || !Number.isFinite(next) || next >= prev) load.dataset.best = v;
+          load.placeholder = hint(load);
           tell({ type: "memtofit-save-load", key: load.dataset.key, value: v });
         });
       }
@@ -218,11 +274,19 @@ h1 .info{margin-left:8px;position:relative;top:-6px}
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") closePop(); });
   window.addEventListener("scroll", (e) => { if (e.target !== pop) closePop(); }, true);
 
+  function weightHint(input) {
+    return input.dataset.best ? input.dataset.best + " " + unitLabel : unitLabel;
+  }
   function applyUnit(unit) {
     unitLabel = unit === "kg" ? "kg" : "lb";
     document.querySelectorAll(".load").forEach((input) => {
-      if (!input.dataset.last) input.placeholder = unitLabel;
+      if (!input.value) input.placeholder = weightHint(input);
     });
+  }
+  function bestNumber(rec) {
+    if (!rec) return "";
+    const raw = rec.best != null && rec.best !== "" ? rec.best : rec.v;
+    return numeric(raw).replace(/\.$/, "");
   }
   applyUnit("lb");
   window.addEventListener("message", (e) => {
@@ -232,12 +296,11 @@ h1 .info{margin-left:8px;position:relative;top:-6px}
     applyUnit(msg.data.unit);
     const loads = msg.data.loads || {};
     document.querySelectorAll(".load").forEach((input) => {
-      const rec = loads[input.dataset.key];
-      const last = rec && rec.v ? numeric(rec.v).replace(/\.$/, "") : "";
-      if (last) input.dataset.last = last;
-      else delete input.dataset.last;
+      const best = bestNumber(loads[input.dataset.key]);
+      if (best) input.dataset.best = best;
+      else delete input.dataset.best;
       input.value = "";
-      input.placeholder = last || unitLabel;
+      input.placeholder = weightHint(input);
       const check = input.closest("tr") && input.closest("tr").querySelector(".done-box");
       input.hidden = !(check && check.checked);
     });
@@ -246,11 +309,12 @@ h1 .info{margin-left:8px;position:relative;top:-6px}
       const rec = days[note.dataset.day];
       note.value = rec && rec.v ? rec.v : "";
     });
+    if (msg.place) applyPlace(msg.place.week, msg.place.day, false);
   });
   tell({ type: "memtofit-ready" });
 
-  weekTabs.forEach((b, i) => b.addEventListener("click", () => { week = i; bringPlanIntoView(); update(); }));
-  dayTabs.forEach((b, i) => b.addEventListener("click", () => { day = i; bringPlanIntoView(); update(); }));
+  weekTabs.forEach((b, i) => b.addEventListener("click", () => { bringPlanIntoView(); applyPlace(i, day, true); }));
+  dayTabs.forEach((b, i) => b.addEventListener("click", () => { bringPlanIntoView(); applyPlace(week, i, true); }));
   for (const group of [weekTabs, dayTabs]) {
     group.forEach((b, i) => b.addEventListener("keydown", (e) => {
       if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
@@ -260,6 +324,7 @@ h1 .info{margin-left:8px;position:relative;top:-6px}
       group[n].click();
     }));
   }
+  paintDots();
   update();
 })();
 </script>

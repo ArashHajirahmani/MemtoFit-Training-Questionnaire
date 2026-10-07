@@ -542,7 +542,7 @@
 <script src="gate.js?v=4"></script>
 <script src="slot.js?v=4"></script>
 <script src="form.js?v=5"></script>
-<script src="share.js?v=5"></script>
+<script src="share.js?v=6"></script>
 <script>
 memtofitGate.start().then(function (session) {
   if (!session) {
@@ -553,9 +553,11 @@ memtofitGate.start().then(function (session) {
     return;
   }
   window.memtofitSession = session;
-  if (session.row && session.row.answers && window.memtofitFill) {
-    window.memtofitFill(session.row.answers);
-  }
+  var pending = session.row ? Promise.resolve(session.row) : memtofitSlot.load(session);
+  return pending.then(function (row) {
+    session.row = row;
+    if (row && row.answers && window.memtofitFill) window.memtofitFill(row.answers);
+  }, function () {});
 });
 </script>
 </body>

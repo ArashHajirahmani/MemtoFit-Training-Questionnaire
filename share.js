@@ -222,11 +222,29 @@
     return false;
   }
 
+  function labelText(el) {
+    return compact(el.textContent).replace(/\s*\*$/, "");
+  }
+
+  function clearForm() {
+    var fields = document.querySelectorAll("main.wrap input, main.wrap textarea, main.wrap select");
+    for (var i = 0; i < fields.length; i++) {
+      var field = fields[i];
+      if (field.type === "radio" || field.type === "checkbox") field.checked = false;
+      else if (field.tagName === "SELECT") field.selectedIndex = 0;
+      else field.value = "";
+    }
+    var list = document.getElementById("lim-list");
+    if (!list) return;
+    var blocks = list.querySelectorAll(".lim");
+    for (var b = blocks.length - 1; b > 0; b--) blocks[b].remove();
+  }
+
   function setLabeled(label, value) {
     var labels = document.querySelectorAll("label.field");
     for (var i = 0; i < labels.length; i++) {
       if (labels[i].closest(".lim")) continue;
-      if (compact(labels[i].textContent) !== label) continue;
+      if (labelText(labels[i]) !== label) continue;
       var id = labels[i].getAttribute("for");
       var input = id ? document.getElementById(id) : null;
       if (!input) continue;
@@ -250,7 +268,7 @@
   function setChoice(label, value) {
     var titles = document.querySelectorAll(".q");
     for (var i = 0; i < titles.length; i++) {
-      if (compact(titles[i].textContent) !== label) continue;
+      if (labelText(titles[i]) !== label) continue;
       var card = titles[i].closest(".card");
       if (!card) return;
       var inputs = card.querySelectorAll('input[type="radio"], input[type="checkbox"]');
@@ -294,6 +312,7 @@
   }
 
   function fillAnswers(markdown) {
+    clearForm();
     var lines = String(markdown || "").replace(/\r\n/g, "\n").split("\n");
     for (var i = 0; i < lines.length; i++) {
       var line = lines[i];
@@ -315,7 +334,7 @@
           var labels = document.querySelectorAll("label.field");
           var labeled = false;
           for (var L = 0; L < labels.length; L++) {
-            if (!labels[L].closest(".lim") && compact(labels[L].textContent) === label) labeled = true;
+            if (!labels[L].closest(".lim") && labelText(labels[L]) === label) labeled = true;
           }
           if (labeled) setLabeled(label, value);
           else setChoice(label, value);
