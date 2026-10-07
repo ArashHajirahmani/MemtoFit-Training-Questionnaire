@@ -44,8 +44,8 @@ h1 .info{margin-left:8px;position:relative;top:-6px}
 (()=>{
   const nav = document.querySelector(".sticky");
   const weekBar = document.querySelector(".weeks");
-  const weekTabs = [...document.querySelectorAll("[data-week]")];
-  const dayTabs = [...document.querySelectorAll("[data-day]")];
+  const weekTabs = [...document.querySelectorAll(".weeks [data-week]")];
+  const dayTabs = [...document.querySelectorAll(".days [data-day]")];
   const panels = [...document.querySelectorAll(".panel")];
   const weekPanels = [...document.querySelectorAll('[id^="week-panel-"]')];
   let week = 0, day = 0;
