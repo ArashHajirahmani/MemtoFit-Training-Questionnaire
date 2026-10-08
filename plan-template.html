@@ -23,15 +23,19 @@ h1 .info{margin-left:8px;position:relative;top:-6px}
 .day-note-wrap{margin:14px 2px 0}
 .day-note-wrap span{display:block;margin:0 0 4px;color:var(--muted);font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
 .day-note{width:100%;min-height:4.6rem;padding:10px 12px;border:1.5px solid var(--line);border-radius:12px;background:#fff;color:var(--ink);font:inherit;font-size:15px;font-weight:500;resize:vertical}
-.week-dots{display:flex;flex-wrap:wrap;gap:7px;margin:10px 0 0;padding:0}
+.progress{display:flex;align-items:center;flex-wrap:wrap;gap:8px 10px;margin:10px 0 0}
+.week-dots{display:flex;flex-wrap:wrap;gap:7px;margin:0;padding:0}
 .week-dots[hidden]{display:none}
-.week-dots span{width:9px;height:9px;box-sizing:border-box;border:1.5px solid var(--amber);border-radius:50%;background:transparent}
+.week-dots span{width:9px;height:9px;flex:0 0 9px;box-sizing:border-box;border:1.5px solid var(--amber);border-radius:50%;background:transparent}
 .week-dots span.on{background:var(--amber)}
+.panel .table-wrap + .eyebrow{display:block;margin:16px 2px 8px}
+.week-count{margin:0;color:#f2f2f2cc;font-size:12px;font-weight:650}
+.week-count[hidden]{display:none}
 @media(max-width:420px){.load{width:3.2rem}}
 </style>
 </head>
 <body data-storage-key="{{STORAGE_KEY}}">
-<header class="hero"><div class="inner"><h1>{{H1_HTML}}</h1><p class="brand">MemtoFit</p><p class="period">{{PERIOD}}</p><p class="week-dots" data-start="{{START_DATE}}" data-weeks="{{WEEK_TOTAL}}" role="img" hidden></p><p class="goal">{{GOAL}}</p></div></header>
+<header class="hero"><div class="inner"><h1>{{H1_HTML}}</h1><p class="brand">MemtoFit</p><p class="period">{{PERIOD}}</p><div class="progress"><p class="week-dots" data-start="{{START_DATE}}" data-weeks="{{WEEK_TOTAL}}" role="img" hidden></p><p class="week-count" hidden></p></div><p class="goal">{{GOAL}}</p></div></header>
 <nav class="sticky" aria-label="Choose week and workout">
   <div class="nav weeks" role="tablist" aria-label="Training week">
     {{WEEK_BUTTONS}}
@@ -50,9 +54,11 @@ h1 .info{margin-left:8px;position:relative;top:-6px}
   const weekBar = document.querySelector(".weeks");
   const weekTabs = [...document.querySelectorAll(".weeks [data-week]")];
   const dayTabs = [...document.querySelectorAll(".days [data-day]")];
-  const panels = [...document.querySelectorAll(".panel")];
+  const bonusTab = document.querySelector(".days [data-bonus]");
+  const bonusPanel = document.querySelector(".bonus-panel");
+  const panels = [...document.querySelectorAll(".panel")].filter((p) => !p.classList.contains("bonus-panel"));
   const weekPanels = [...document.querySelectorAll('[id^="week-panel-"]')];
-  let week = 0, day = 0;
+  let week = 0, day = 0, bonus = false;
   const dayCount = dayTabs.length || 1;
   if (weekTabs.length < 2 && weekBar) weekBar.hidden = true;
 
@@ -73,10 +79,21 @@ h1 .info{margin-left:8px;position:relative;top:-6px}
     });
     weekPanels.forEach((p, i) => { p.hidden = i !== week; });
     dayTabs.forEach((b, i) => {
-      b.setAttribute("aria-selected", String(i === day));
-      b.tabIndex = i === day ? 0 : -1;
+      const on = !bonus && i === day;
+      b.setAttribute("aria-selected", String(on));
+      b.tabIndex = on ? 0 : -1;
     });
-    panels.forEach((p, i) => { p.hidden = i !== week * dayCount + day; });
+    if (bonusTab) {
+      bonusTab.setAttribute("aria-selected", String(bonus));
+      bonusTab.tabIndex = bonus ? 0 : -1;
+    }
+    panels.forEach((p, i) => { p.hidden = bonus || i !== week * dayCount + day; });
+    if (bonusPanel) bonusPanel.hidden = !bonus;
+  }
+  function showBonus(report) {
+    bonus = true;
+    update();
+    if (report) tell({ type: "memtofit-place", week: week, day: day });
   }
   function calendarWeek(startISO) {
     const parts = startISO.split("-");
@@ -94,14 +111,17 @@ h1 .info{margin-left:8px;position:relative;top:-6px}
     if (!el) return;
     const total = parseInt(el.dataset.weeks, 10);
     const start = el.dataset.start || "";
+    const count = document.querySelector(".week-count");
     if (!total || total < 1 || !/^\d{4}-\d{2}-\d{2}$/.test(start)) {
       el.hidden = true;
       el.replaceChildren();
       el.removeAttribute("aria-label");
+      if (count) count.hidden = true;
       return;
     }
     const current = calendarWeek(start);
     const filled = Math.max(0, Math.min(total, current));
+    const label = current < 1 ? "Before week 1 of " + total : "Week " + filled + " of " + total;
     el.replaceChildren();
     for (let i = 0; i < total; i++) {
       const dot = document.createElement("span");
@@ -109,10 +129,15 @@ h1 .info{margin-left:8px;position:relative;top:-6px}
       if (i < filled) dot.className = "on";
       el.appendChild(dot);
     }
-    el.setAttribute("aria-label", current < 1 ? "Before week 1 of " + total : "Week " + filled + " of " + total);
+    el.setAttribute("aria-label", label);
     el.hidden = false;
+    if (count) {
+      count.textContent = label;
+      count.hidden = false;
+    }
   }
   function applyPlace(nextWeek, nextDay, report) {
+    bonus = false;
     week = clampIndex(nextWeek, weekTabs.length || 1);
     day = clampIndex(nextDay, dayTabs.length || 1);
     update();
@@ -313,9 +338,11 @@ h1 .info{margin-left:8px;position:relative;top:-6px}
   });
   tell({ type: "memtofit-ready" });
 
+  const dayButtons = bonusTab ? dayTabs.concat(bonusTab) : dayTabs;
   weekTabs.forEach((b, i) => b.addEventListener("click", () => { bringPlanIntoView(); applyPlace(i, day, true); }));
   dayTabs.forEach((b, i) => b.addEventListener("click", () => { bringPlanIntoView(); applyPlace(week, i, true); }));
-  for (const group of [weekTabs, dayTabs]) {
+  if (bonusTab) bonusTab.addEventListener("click", () => { bringPlanIntoView(); showBonus(true); });
+  for (const group of [weekTabs, dayButtons]) {
     group.forEach((b, i) => b.addEventListener("keydown", (e) => {
       if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
       e.preventDefault();

@@ -112,6 +112,17 @@ def briefs_from(body):
     return briefs
 
 
+def named_brief(body, name):
+    for chunk in re.split(r"(?m)^### ", body or ""):
+        match = re.match(rf"({re.escape(name)}[^\n]*)\n(.*)", chunk, re.S)
+        if not match:
+            continue
+        section = re.split(r"(?m)^## ", match.group(2), maxsplit=1)[0]
+        section = re.sub(r"(?m)^---\s*$", "", section).strip()
+        return plain_block(section)
+    return ""
+
+
 def exercise_rows(body):
     """Map day number → list of {names, description, watch} from ### Day N tables."""
     tables = {}
@@ -273,24 +284,27 @@ def hint_html(hints):
     return "".join(f'<small class="hint">{html.escape(hint)}</small>' for hint in hints if hint)
 
 
-def exercise_html(groups, join_word, note):
+def exercise_html(groups, join_word, note, group=""):
     parts = []
     flat = []
-    for index, group in enumerate(groups):
+    if group:
+        parts.append(f'<b class="join">{html.escape(group)}</b>')
+    for index, names in enumerate(groups):
         if index:
             parts.append(f'<b class="join">{join_word}</b>')
-        for inner, name in enumerate(group):
+        for inner, name in enumerate(names):
             if inner:
                 parts.append('<b class="join">OR</b>')
             parts.append(link(name))
             flat.append(name)
-    label = "Note for " + " and ".join(flat[:3])
-    parts.append(info_button(note, label))
+    if note:
+        label = "Note for " + " and ".join(flat[:3])
+        parts.append(info_button(note, label))
     return '<span class="exercise">' + "".join(parts) + "</span>", flat
 
 
-def row_html(groups, join_word, hints, sets, note, key, pair=False):
-    exercise, _names = exercise_html(groups, join_word, note)
+def row_html(groups, join_word, hints, sets, note, key, pair=False, group=""):
+    exercise, _names = exercise_html(groups, join_word, note, group)
     klass = ' class="pair"' if pair else ""
     load = (
         f'<input class="load" data-key="{html.escape(key)}" hidden '
@@ -355,12 +369,51 @@ def week_number(line):
     return ROMAN.get(token)
 
 
+def bonus_banner(line):
+    return "BONUS" in line.upper() and not line.startswith("|") and not line.startswith("#")
+
+
+def optional_heading(line):
+    return bool(re.fullmatch(r"#{0,3}\s*Optional", line, re.I))
+
+
+def take_row(row):
+    if not row or plain_inline(row[0]).lower() in ("exercise", "group"):
+        return None
+    source = None
+    sets = ""
+    group = ""
+    if len(row) >= 3 and LINK.search(row[1]) and not LINK.search(row[0]):
+        source = row[1]
+        sets = row[2]
+        group = plain_inline(row[0])
+    elif len(row) >= 2 and LINK.search(row[0]):
+        source = row[0]
+        sets = row[1]
+    if not source:
+        return None
+    groups, hints, ss = parse_exercise_cell(source)
+    if not groups:
+        return None
+    return {
+        "group": group,
+        "groups": groups,
+        "hints": hints,
+        "ss": ss,
+        "sets": fmt_sets(sets),
+    }
+
+
 def parse_gym(text):
     goal = ""
     start = finish = ""
     weeks = []
+    bonus = []
+    optional = []
+    bonus_lead = ""
     current = None
     day = None
+    mode = ""
     expect_goal = False
     for raw in text.splitlines():
         line = raw.strip()
@@ -378,13 +431,44 @@ def parse_gym(text):
             current = {"n": number, "days": []}
             weeks.append(current)
             day = None
+            mode = ""
             expect_goal = False
             continue
         head = DAY_HEAD.match(line)
         if head and current is not None:
             day = {"weekday": head.group("day"), "focus": "", "rows": []}
             current["days"].append(day)
+            mode = ""
             expect_goal = False
+            continue
+        if bonus_banner(line):
+            day = None
+            mode = "bonus"
+            expect_goal = False
+            continue
+        if optional_heading(line):
+            day = None
+            mode = "optional"
+            expect_goal = False
+            continue
+        if mode == "bonus" and line.lower().startswith("choose"):
+            bonus_lead = plain_inline(line)
+            continue
+        if line.startswith("|") and not is_rule(cells(line)):
+            taken = take_row(cells(line))
+            if not taken:
+                continue
+            if mode == "bonus":
+                bonus.append(taken)
+            elif mode == "optional":
+                optional.append(taken)
+            elif day is not None:
+                day["rows"].append({
+                    "groups": taken["groups"],
+                    "hints": taken["hints"],
+                    "ss": taken["ss"],
+                    "sets": taken["sets"],
+                })
             continue
         if day is None:
             continue
@@ -399,23 +483,14 @@ def parse_gym(text):
             day["focus"] = line
             expect_goal = False
             continue
-        if line.startswith("|") and not is_rule(cells(line)):
-            row = cells(line)
-            if row and plain_inline(row[0]).lower() == "exercise":
-                continue
-            if len(row) >= 2 and LINK.search(row[0]):
-                groups, hints, ss = parse_exercise_cell(row[0])
-                day["rows"].append({
-                    "groups": groups,
-                    "hints": hints,
-                    "ss": ss,
-                    "sets": fmt_sets(row[1]),
-                })
     return {
         "goal": goal,
         "start": start,
         "finish": finish,
         "weeks": [week for week in weeks if week["days"]],
+        "bonus": bonus,
+        "optional": optional,
+        "bonus_lead": bonus_lead,
     }
 
 
@@ -450,6 +525,17 @@ def render_rows(day_no, rows, tables):
     return "\n".join(html_rows)
 
 
+def render_choice_rows(rows, key_prefix):
+    html_rows = []
+    for row in rows:
+        names = [name for group in row["groups"] for name in group]
+        html_rows.append(row_html(
+            row["groups"], "OR", row["hints"], row["sets"], "",
+            f"{key_prefix}:{slug(names)}", group=row.get("group", ""),
+        ))
+    return "\n".join(html_rows)
+
+
 def focus_text(text):
     return html.escape(text.replace("•", "·").replace(" · ", " · "))
 
@@ -457,7 +543,9 @@ def focus_text(text):
 def render(plan, notes, person, slot):
     found = sections(notes)
     tables = exercise_rows(found.get("Exercise notes", ""))
-    briefs = briefs_from(day_section(found))
+    day_body = day_section(found)
+    briefs = briefs_from(day_body)
+    bonus_note = named_brief(notes, "Bonus")
     title_note = program_note(found)
     weeks = plan["weeks"]
     if not weeks:
@@ -491,6 +579,11 @@ def render(plan, notes, person, slot):
         day_buttons.append(
             f'<button type="button" role="tab" id="day-tab-{index + 1}" aria-selected="{selected}" '
             f'data-day="{index}"><small>DAY {index + 1}</small>{SHORT_DAY[day["weekday"]]}</button>'
+        )
+    if plan.get("bonus") or plan.get("optional"):
+        day_buttons.append(
+            '<button type="button" id="bonus-tab" aria-selected="false" data-bonus>'
+            '<small>EXTRA</small>Bonus</button>'
         )
 
     panels = []
@@ -539,6 +632,46 @@ def render(plan, notes, person, slot):
             )
         parts.append("</div>")
         panels.append("".join(parts))
+
+    bonus_rows = plan.get("bonus") or []
+    optional_rows = plan.get("optional") or []
+    if bonus_rows or optional_rows:
+        heading = "Bonus" if bonus_rows else "Optional"
+        if bonus_note:
+            h2 = (
+                f'<h2 class="noted"><span>{html.escape(heading)}</span>'
+                + info_button(bonus_note, f"Note for {heading}")
+                + "</h2>"
+            )
+        else:
+            h2 = f"<h2>{html.escape(heading)}</h2>"
+        blocks = []
+        if bonus_rows:
+            lead = focus_text(plan.get("bonus_lead") or "Choose 1 from A, 1 from B, 1 from C")
+            blocks.append(
+                f'<p class="focus">{lead}</p>'
+                f'<div class="table-wrap"><table><thead><tr>'
+                f"<th>Exercise</th><th>Sets &amp; reps</th></tr></thead><tbody>\n"
+                f"{render_choice_rows(bonus_rows, 'bonus')}\n</tbody></table></div>"
+            )
+        if optional_rows:
+            blocks.append(
+                '<p class="eyebrow">OPTIONAL</p>'
+                f'<div class="table-wrap"><table><thead><tr>'
+                f"<th>Exercise</th><th>Sets &amp; reps</th></tr></thead><tbody>\n"
+                f"{render_choice_rows(optional_rows, 'optional')}\n</tbody></table></div>"
+            )
+        note_box = (
+            '<label class="day-note-wrap"><span>Note</span>'
+            '<textarea class="day-note" data-day="bonus" '
+            'placeholder="Note for this day"></textarea></label>'
+        )
+        panels.append(
+            f'<section class="panel bonus-panel" data-panel="bonus" hidden>'
+            f'<p class="eyebrow">BONUS</p>{h2}'
+            + "".join(blocks)
+            + f"{note_box}</section>"
+        )
 
     page = TEMPLATE.read_text()
     replacements = {
