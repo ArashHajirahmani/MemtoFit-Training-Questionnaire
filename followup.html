@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MemtoFit · A few more questions</title>
+<meta name="description" content="A few more questions before your program.">
+<link rel="canonical" href="https://memtofit.memtoria.com/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MemtoFit">
+<meta property="og:url" content="https://memtofit.memtoria.com/">
+<meta property="og:title" content="MemtoFit · A few more questions">
+<meta property="og:description" content="A few more questions before your program.">
+<meta property="og:image" content="https://memtofit.memtoria.com/og-image.jpg?v=2">
+<meta property="og:image:secure_url" content="https://memtofit.memtoria.com/og-image.jpg?v=2">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="MemtoFit">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="MemtoFit · A few more questions">
+<meta name="twitter:description" content="A few more questions before your program.">
+<meta name="twitter:image" content="https://memtofit.memtoria.com/og-image.jpg?v=2">
+<style>
+  :root {
+    --raft-bg: #2C4A27;
+    --raft-bg-inv: #181F17;
+    --raft-accent: #FAAF58;
+    --raft-fg: #F2F2F2;
+    --paper: #f7f4ee;
+    --ink: #181F17;
+    --muted: #4a5a48;
+    --line: #d4d0c6;
+    --ok: #2C4A27;
+    --tap: 2.75rem;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font: 17px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  .site-foot {
+    padding: 0.2rem 0.9rem calc(1.1rem + env(safe-area-inset-bottom, 0px));
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.8rem;
+    line-height: 1.4;
+  }
+  .site-foot p { margin: 0; }
+  .hero {
+    background: var(--raft-bg);
+    color: var(--raft-fg);
+    padding: 1.35rem 1.1rem 1.5rem;
+    text-align: center;
+  }
+  a.brand {
+    display: block;
+    margin: 0 auto;
+    font-size: 1.35rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    color: var(--raft-accent);
+    line-height: 1.2;
+    text-decoration: none;
+  }
+  .hero h1 {
+    margin: 0.7rem 0 0.35rem;
+    font-size: 1.45rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+    color: var(--raft-fg);
+  }
+  .hero .sub {
+    margin: 0 auto;
+    max-width: 28rem;
+    color: var(--raft-fg);
+    opacity: 0.88;
+    font-size: 0.95rem;
+    line-height: 1.4;
+  }
+  .save-status {
+    margin: 0;
+    padding: 0.45rem 0.9rem 0;
+    text-align: center;
+    font-size: 0.92rem;
+    color: var(--ok);
+  }
+  .save-status.bad { color: #b42318; }
+  .toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.65rem 0.9rem;
+    background: rgba(247,244,238,0.94);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line);
+  }
+  .toolbar button {
+    flex: 1;
+    min-height: var(--tap);
+    border: 0;
+    border-radius: 0.7rem;
+    background: var(--raft-accent);
+    color: var(--raft-bg-inv);
+    font: 600 0.95rem/1 system-ui, sans-serif;
+    cursor: pointer;
+  }
+  .toolbar button[aria-disabled="true"] { opacity: 0.45; }
+  .wrap { max-width: 40rem; margin: 0 auto; padding: 1rem 0.9rem 1.25rem; }
+  h2 {
+    margin: 1.6rem 0 0.55rem;
+    padding: 0.55rem 0.75rem;
+    background: var(--raft-bg);
+    color: var(--raft-fg);
+    font-size: 1.05rem;
+    border-radius: 0.55rem;
+  }
+  h2:first-child { margin-top: 0.2rem; }
+  p.lead {
+    margin: 0 0 0.85rem;
+    color: var(--muted);
+    font-size: 0.92rem;
+    line-height: 1.45;
+  }
+  .card { border: 1.5px solid transparent; border-radius: 0.7rem; margin: 0 0 0.85rem; }
+  .card.invalid { border-color: #b42318; background: #fdf4f3; }
+  .card.invalid .req { color: #b42318; }
+  .card.invalid input[type="text"],
+  .card.invalid textarea,
+  .card.invalid select { border-color: #b42318; }
+  .err {
+    display: none;
+    margin: 0.55rem 0 0;
+    color: #b42318;
+    font-size: 0.88rem;
+    line-height: 1.35;
+  }
+  .card.invalid .err { display: block; }
+  .req::after { content: " *"; color: #b42318; font-weight: 700; }
+  .q {
+    display: block;
+    font-weight: 700;
+    font-size: 1.02rem;
+    margin: 0 0 0.35rem;
+  }
+  input[type="text"], textarea, select {
+    width: 100%;
+    min-height: var(--tap);
+    padding: 0.65rem 0.75rem;
+    border: 1.5px solid #c9c4b8;
+    border-radius: 0.55rem;
+    background: #fffdf8;
+    font: inherit;
+    appearance: none;
+  }
+  textarea { min-height: 7.5rem; resize: vertical; }
+  select {
+    padding-right: 2.2rem;
+    background-image:
+      linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+      linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+    background-position: calc(100% - 1.05rem) 55%, calc(100% - 0.75rem) 55%;
+    background-size: 0.35rem 0.35rem, 0.35rem 0.35rem;
+    background-repeat: no-repeat;
+  }
+  .note {
+    margin-top: 1.4rem;
+    font-size: 0.85rem;
+    color: var(--muted);
+    text-align: center;
+  }
+  #saved-dialog {
+    width: min(22rem, calc(100vw - 2.2rem));
+    margin: auto;
+    padding: 1.2rem 1.1rem 1.15rem;
+    border: 0;
+    border-radius: 0.8rem;
+    background: #f7f4ee;
+    color: var(--ink);
+  }
+  #saved-dialog::backdrop { background: rgba(24, 31, 23, 0.45); }
+  #saved-dialog h2 {
+    margin: 0 0 0.75rem;
+    padding: 0;
+    background: none;
+    color: var(--ink);
+    font-size: 1.15rem;
+    line-height: 1.3;
+    border-radius: 0;
+  }
+  #saved-dialog p { margin: 0; line-height: 1.45; }
+  #saved-dialog button {
+    width: 100%;
+    min-height: var(--tap);
+    margin-top: 0.9rem;
+    border: 0;
+    border-radius: 0.7rem;
+    background: var(--raft-bg);
+    color: var(--raft-fg);
+    font: 600 0.95rem/1 system-ui, sans-serif;
+    cursor: pointer;
+  }
+  @media (min-width: 640px) {
+    .hero h1 { font-size: 1.7rem; }
+    .brand { font-size: 1.45rem; }
+  }
+</style>
+</head>
+<body>
+<header class="hero">
+  <a class="brand" id="home-link" href="./">MemtoFit</a>
+  <h1>A few more questions</h1>
+  <p class="sub" id="intro">Your trainer needs a few answers before the next plan.</p>
+  <p class="sub" id="need-link" hidden>Open the link you were sent.</p>
+  <p class="sub" id="wait" hidden>One moment.</p>
+</header>
+<div class="toolbar" id="toolbar" hidden>
+  <button type="button" id="submit-btn">Submit</button>
+</div>
+<p class="save-status" id="save-status" hidden></p>
+<main class="wrap" id="form" hidden></main>
+<footer class="site-foot"><p>v2.1 · © 2026 memtoria.com</p></footer>
+<dialog id="saved-dialog">
+  <h2>Your answers are saved!</h2>
+  <p>Contact your trainer. They can continue your plan.</p>
+  <button type="button" id="saved-ok">Got it</button>
+</dialog>
+<script src="config.js?v=4"></script>
+<script src="gate.js?v=5"></script>
+<script src="slot.js?v=5"></script>
+<script src="followups.js?v=2"></script>
+<script>
+(function () {
+  var catalog = window.MEMTOFIT_FOLLOWUPS;
+  var need = document.getElementById("need-link");
+  var wait = document.getElementById("wait");
+  var intro = document.getElementById("intro");
+  var form = document.getElementById("form");
+  var toolbar = document.getElementById("toolbar");
+  var submitBtn = document.getElementById("submit-btn");
+  var saving = false;
+  var existing = "";
+  var questions = [];
+
+  function showNeed(message) {
+    wait.hidden = true;
+    intro.hidden = true;
+    need.hidden = false;
+    if (message) need.textContent = message;
+    form.hidden = true;
+    toolbar.hidden = true;
+  }
+
+  function fieldId(question) {
+    return "fu-" + question.id;
+  }
+
+  function render(session) {
+    existing = (session.row && session.row.followup) || "";
+    questions = catalog.questionsIn(existing);
+    if (!questions.length) {
+      showNeed("Nothing to answer on this link yet.");
+      return;
+    }
+    var answers = catalog.answersIn(existing);
+    form.innerHTML = "";
+    var lead = document.createElement("p");
+    lead.className = "lead";
+    lead.textContent = "Answer in your own words. Not sure is a fine answer.";
+    form.appendChild(lead);
+    for (var i = 0; i < questions.length; i++) form.appendChild(cardFor(questions[i], answers[questions[i].id] || ""));
+    var note = document.createElement("p");
+    note.className = "note";
+    note.textContent = "Your answers are used only to build a training program that fits you. This is not a medical assessment.";
+    form.appendChild(note);
+    wait.hidden = true;
+    intro.hidden = false;
+    need.hidden = true;
+    form.hidden = false;
+    toolbar.hidden = false;
+  }
+
+  function cardFor(question, value) {
+    var card = document.createElement("div");
+    card.className = "card";
+    var q = document.createElement("span");
+    q.className = "q req";
+    q.textContent = question.prompt;
+    card.appendChild(q);
+    var input = document.createElement("textarea");
+    input.id = fieldId(question);
+    input.placeholder = "Write what you know. Not sure is fine.";
+    input.value = value || "";
+    card.appendChild(input);
+    var err = document.createElement("p");
+    err.className = "err";
+    card.appendChild(err);
+    return card;
+  }
+
+  function setErr(card, msg) {
+    if (!card) return;
+    var p = card.querySelector(".err");
+    if (msg) {
+      card.classList.add("invalid");
+      if (p) p.textContent = msg;
+    } else {
+      card.classList.remove("invalid");
+      if (p) p.textContent = "";
+    }
+  }
+
+  function check(show) {
+    var ok = true;
+    var first = null;
+    var cards = form.querySelectorAll(".card");
+    for (var i = 0; i < cards.length; i++) {
+      var input = cards[i].querySelector("textarea");
+      var filled = !!(input && String(input.value || "").trim());
+      if (filled) setErr(cards[i], "");
+      else {
+        ok = false;
+        if (show) setErr(cards[i], "This one is needed. Not sure is fine.");
+        else setErr(cards[i], "");
+        if (!first) first = cards[i];
+      }
+    }
+    if (submitBtn) submitBtn.setAttribute("aria-disabled", ok ? "false" : "true");
+    return { ok: ok, first: first };
+  }
+
+  function submit() {
+    if (saving) return;
+    var result = check(true);
+    if (!result.ok) {
+      if (result.first) result.first.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    var session = window.memtofitSession;
+    if (!session || !window.memtofitSlot || !catalog) {
+      mark(false);
+      return;
+    }
+    var updates = {};
+    for (var i = 0; i < questions.length; i++) {
+      var el = document.getElementById(fieldId(questions[i]));
+      updates[questions[i].id] = String(el && el.value || "").trim();
+    }
+    var text = catalog.withAnswers(existing, updates);
+    saving = true;
+    if (submitBtn) submitBtn.disabled = true;
+    window.memtofitSlot.saveFollowup(session, text).then(function () {
+      existing = text;
+      mark(true);
+      saving = false;
+      if (submitBtn) submitBtn.disabled = false;
+    }, function () {
+      mark(false);
+      saving = false;
+      if (submitBtn) submitBtn.disabled = false;
+    });
+  }
+
+  function mark(ok) {
+    var status = document.getElementById("save-status");
+    if (ok) {
+      if (status) {
+        status.hidden = true;
+        status.textContent = "";
+        status.classList.remove("bad");
+      }
+      var dialog = document.getElementById("saved-dialog");
+      if (dialog && !dialog.open) dialog.showModal();
+      return;
+    }
+    if (!status) return;
+    status.hidden = false;
+    status.classList.add("bad");
+    status.textContent = "Could not submit. Try again.";
+  }
+
+  if (form) {
+    form.addEventListener("change", function () { check(true); });
+    form.addEventListener("input", function () { check(true); });
+  }
+  if (submitBtn) submitBtn.addEventListener("click", submit);
+  var savedOk = document.getElementById("saved-ok");
+  if (savedOk) {
+    savedOk.addEventListener("click", function () {
+      var dialog = document.getElementById("saved-dialog");
+      if (dialog && dialog.open) dialog.close();
+    });
+  }
+
+  if (!catalog) {
+    showNeed("Open the link you were sent.");
+    return;
+  }
+
+  wait.hidden = false;
+  intro.hidden = true;
+  memtofitGate.start().then(function (session) {
+    if (!session) {
+      showNeed("Open the link you were sent.");
+      return;
+    }
+    window.memtofitSession = session;
+    render(session);
+    if (!form.hidden) check(false);
+  }).catch(function () {
+    showNeed("Could not reach the server. Try again.");
+  });
+})();
+</script>
+</body>
+</html>
