@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MemtoFit · Program</title>
+<style>
+  :root {
+    --raft-bg: #2C4A27;
+    --raft-bg-inv: #181F17;
+    --raft-accent: #FAAF58;
+    --raft-fg: #F2F2F2;
+    --paper: #f7f4ee;
+    --ink: #181F17;
+    --muted: #4a5a48;
+    --line: #d4d0c6;
+    --tap: 2.75rem;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    background: var(--paper);
+    color: var(--ink);
+    font: 17px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  .hero {
+    background: var(--raft-bg);
+    color: var(--raft-fg);
+    padding: 1.35rem 1.1rem 1.5rem;
+    text-align: center;
+  }
+  a.brand {
+    display: block;
+    margin: 0 auto;
+    font-size: 1.35rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    color: var(--raft-accent);
+    line-height: 1.2;
+    text-decoration: none;
+  }
+  .hero h1 {
+    margin: 0.7rem 0 0.35rem;
+    font-size: 1.45rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--raft-fg);
+  }
+  .hero .sub {
+    margin: 0 auto;
+    max-width: 28rem;
+    color: var(--raft-fg);
+    opacity: 0.88;
+    font-size: 0.95rem;
+  }
+  .wrap { max-width: 40rem; margin: 0 auto; padding: 1rem 0.9rem 1rem; }
+  iframe {
+    display: block;
+    width: 100%;
+    min-height: 12rem;
+    border: 0;
+    background: #fff;
+  }
+  body.plan-doc { display: block; min-height: 0; background: #F7F6F1; }
+  body.plan-doc .hero { display: none; }
+  body.plan-doc .wrap { max-width: none; padding: 0; }
+  body.plan-doc .site-foot { display: none; }
+  body.plan-doc iframe.full {
+    height: 100dvh;
+    min-height: 100dvh;
+    background: #F7F6F1;
+  }
+  .status { margin: 0.75rem 0 0; text-align: center; color: var(--muted); font-size: 0.92rem; }
+  .status.bad { color: #b42318; }
+  .site-foot {
+    margin-top: auto;
+    padding: 0.6rem 0.9rem calc(1rem + env(safe-area-inset-bottom, 0px));
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.8rem;
+    line-height: 1.4;
+  }
+  .site-foot p { margin: 0; }
+</style>
+</head>
+<body>
+<header class="hero">
+  <a class="brand" id="home-link" href="./">MemtoFit</a>
+  <h1>Program</h1>
+  <p class="sub" id="need-link" hidden>Open the link you were sent.</p>
+  <p class="sub" id="later" hidden>After your trainer generates it.</p>
+</header>
+<main class="wrap" id="app" hidden>
+  <iframe id="plan-frame" title="Program"></iframe>
+  <p class="status" id="plan-status" hidden></p>
+</main>
+<footer class="site-foot"><p>v2.1 · © 2026 memtoria.com</p></footer>
+<script src="config.js?v=4"></script>
+<script src="gate.js?v=5"></script>
+<script src="crypto.js?v=5"></script>
+<script src="slot.js?v=5"></script>
+<script src="program.js?v=9"></script>
+</body>
+</html>

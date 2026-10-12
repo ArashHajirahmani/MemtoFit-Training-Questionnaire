@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MemtoFit</title>
+<meta name="description" content="Your questionnaire and your program.">
+<link rel="canonical" href="https://memtofit.memtoria.com/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MemtoFit">
+<meta property="og:url" content="https://memtofit.memtoria.com/">
+<meta property="og:title" content="MemtoFit">
+<meta property="og:description" content="Your questionnaire and your program.">
+<meta property="og:image" content="https://memtofit.memtoria.com/og-image.jpg?v=2">
+<meta property="og:image:secure_url" content="https://memtofit.memtoria.com/og-image.jpg?v=2">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="MemtoFit">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="MemtoFit">
+<meta name="twitter:description" content="Your questionnaire and your program.">
+<meta name="twitter:image" content="https://memtofit.memtoria.com/og-image.jpg?v=2">
+<style>
+  :root {
+    --raft-bg: #2C4A27;
+    --raft-bg-inv: #181F17;
+    --raft-accent: #FAAF58;
+    --raft-fg: #F2F2F2;
+    --paper: #f7f4ee;
+    --ink: #181F17;
+    --muted: #4a5a48;
+    --tap: 2.75rem;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    background: var(--paper);
+    color: var(--ink);
+    font: 17px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  .hero {
+    background: var(--raft-bg);
+    color: var(--raft-fg);
+    padding: 1.35rem 1.1rem 1.5rem;
+    text-align: center;
+  }
+  .brand {
+    margin: 0 auto;
+    font-size: 1.35rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    color: var(--raft-accent);
+    line-height: 1.2;
+  }
+  .hero h1 {
+    margin: 0.7rem 0 0.35rem;
+    font-size: 1.45rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+    color: var(--raft-fg);
+  }
+  .hero .sub {
+    margin: 0 auto;
+    max-width: 28rem;
+    color: var(--raft-fg);
+    opacity: 0.88;
+    font-size: 0.95rem;
+  }
+  .wrap { max-width: 40rem; margin: 0 auto; padding: 1.25rem 0.9rem 1rem; }
+  .guide {
+    margin: 0 0 1.05rem;
+    font-size: 0.98rem;
+    line-height: 1.45;
+  }
+  .choice {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: var(--tap);
+    margin: 0 0 0.7rem;
+    border: 0;
+    border-radius: 0.7rem;
+    background: var(--raft-bg);
+    color: var(--raft-fg);
+    font: 600 1rem/1 system-ui, sans-serif;
+    text-decoration: none;
+    text-align: center;
+  }
+  .choice.alt { background: var(--raft-accent); color: var(--raft-bg-inv); }
+  .choice.is-disabled { opacity: 0.45; pointer-events: none; }
+  .hint {
+    margin: -0.2rem 0 0;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.92rem;
+  }
+  .site-foot {
+    margin-top: auto;
+    padding: 0.6rem 0.9rem calc(1rem + env(safe-area-inset-bottom, 0px));
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.8rem;
+    line-height: 1.4;
+  }
+  .site-foot p { margin: 0; }
+</style>
+</head>
+<body>
+<header class="hero">
+  <p class="brand">MemtoFit</p>
+  <h1 id="hello">Welcome</h1>
+  <p class="sub" id="need-link" hidden>Open the link you were sent.</p>
+  <p class="sub" id="wait" hidden>One moment.</p>
+</header>
+<main class="wrap">
+  <div id="choices" hidden>
+    <p class="guide" id="guide"></p>
+    <a class="choice" id="questionnaire-link" href="questionnaire.html">Questionnaire</a>
+    <a class="choice alt is-disabled" id="program-link" href="program.html" aria-disabled="true" tabindex="-1">Program</a>
+    <p class="hint" id="program-note" hidden>After your trainer generates it.</p>
+  </div>
+</main>
+<footer class="site-foot"><p>v2.1 · © 2026 memtoria.com</p></footer>
+<script src="config.js?v=4"></script>
+<script src="gate.js?v=5"></script>
+<script src="slot.js?v=5"></script>
+<script src="crypto.js?v=5"></script>
+<script>
+(function () {
+  var NEW_GUIDE = "Start the questionnaire and answer it carefully. When you finish, ask your trainer to generate your program.";
+  var CLOSE_GUIDE = "This program is nearly finished. Ask your trainer to review it and set your next targets. Update the questionnaire, then ask your trainer for the next program.";
+  var DONE_GUIDE = "Well done. This program is finished. Ask your trainer to review it and set your next targets. Update the questionnaire, then ask your trainer for the next program.";
+  var OPEN_GUIDE = "Your program is here. When you want the next one, update the questionnaire and ask your trainer to generate it.";
+
+  var hello = document.getElementById("hello");
+  var need = document.getElementById("need-link");
+  var wait = document.getElementById("wait");
+  var choices = document.getElementById("choices");
+  var guide = document.getElementById("guide");
+  var questionnaire = document.getElementById("questionnaire-link");
+  var program = document.getElementById("program-link");
+  var note = document.getElementById("program-note");
+
+  program.addEventListener("click", function (e) {
+    if (program.classList.contains("is-disabled")) e.preventDefault();
+  });
+
+  function niceName(raw) {
+    raw = String(raw || "").replace(/\s+/g, " ").trim();
+    if (!raw) return "";
+    return raw.charAt(0).toUpperCase() + raw.slice(1);
+  }
+
+  function nameFromAnswers(text) {
+    var match = String(text || "").match(/\*\*Name:\*\*\s*(.+)/i);
+    return match ? match[1].trim() : "";
+  }
+
+  function planFacts(html) {
+    html = String(html || "");
+    var start = (html.match(/data-start="(\d{4}-\d{2}-\d{2})"/) || [])[1] || "";
+    var weeks = parseInt((html.match(/data-weeks="(\d+)"/) || [])[1] || "0", 10);
+    var h1 = (html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i) || [])[1] || "";
+    var text = h1.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+    var named = text.match(/^(.+?)['\u2019]s\s+Gym\b/i);
+    return {
+      start: start,
+      weeks: isFinite(weeks) ? weeks : 0,
+      name: named ? named[1].trim() : ""
+    };
+  }
+
+  function calendarWeek(startISO) {
+    var parts = String(startISO || "").split("-");
+    if (parts.length !== 3) return 0;
+    var start = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+    var today = new Date();
+    var startMid = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+    var todayMid = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    if (todayMid < startMid) return 0;
+    var days = Math.round((todayMid - startMid) / 86400000);
+    return Math.floor(days / 7) + 1;
+  }
+
+  function showWelcome(back, name, text, programOn) {
+    var who = niceName(name);
+    hello.textContent = who ? ((back ? "Welcome back, " : "Welcome, ") + who) : (back ? "Welcome back" : "Welcome");
+    guide.textContent = text;
+    wait.hidden = true;
+    choices.hidden = false;
+    if (programOn) {
+      program.classList.remove("is-disabled");
+      program.removeAttribute("aria-disabled");
+      program.removeAttribute("tabindex");
+      note.hidden = true;
+    } else {
+      program.classList.add("is-disabled");
+      program.setAttribute("aria-disabled", "true");
+      program.tabIndex = -1;
+      note.hidden = false;
+    }
+  }
+
+  memtofitGate.start().then(function (session) {
+    if (!session) {
+      need.hidden = false;
+      return;
+    }
+    questionnaire.href = "questionnaire.html?s=" + session.id;
+    program.href = "program.html?s=" + session.id;
+    var pending = session.row ? Promise.resolve(session.row) : memtofitSlot.load(session);
+    return pending.then(function (row) {
+      var answered = nameFromAnswers(row && row.answers) || session.name;
+      if (!row || !row.plan) {
+        showWelcome(false, answered, NEW_GUIDE, false);
+        return;
+      }
+      wait.hidden = false;
+      return memtofitCrypto.decryptPlan(session.name, row.plan).then(function (html) {
+        var facts = planFacts(html);
+        var who = facts.name || answered;
+        if (!facts.start || !facts.weeks) {
+          showWelcome(true, who, OPEN_GUIDE, true);
+          return;
+        }
+        var current = calendarWeek(facts.start);
+        if (current < facts.weeks - 1) {
+          location.replace("program.html?s=" + session.id);
+          return;
+        }
+        showWelcome(true, who, current > facts.weeks ? DONE_GUIDE : CLOSE_GUIDE, true);
+      }, function () {
+        showWelcome(true, answered, OPEN_GUIDE, true);
+      });
+    }).catch(function () {
+      wait.hidden = true;
+      need.hidden = false;
+      need.textContent = "Could not reach the server. Try again.";
+    });
+  });
+})();
+</script>
+</body>
+</html>
