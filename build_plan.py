@@ -359,14 +359,24 @@ def exercise_html(groups, join_word, note, group=""):
     flat = []
     if group:
         parts.append(f'<b class="join">{html.escape(group)}</b>')
+    several = len(groups) > 1
     for index, names in enumerate(groups):
         if index:
-            parts.append(f'<b class="join">{join_word}</b>')
+            parts.append(f'<b class="join">{html.escape(join_word)}</b>')
+        wrap = several and len(names) > 1
+        chunk = []
+        if wrap:
+            chunk.append('<b class="join">(</b>')
         for inner, name in enumerate(names):
             if inner:
-                parts.append('<b class="join">OR</b>')
-            parts.append(link(name))
+                chunk.append('<b class="join">OR</b>')
+            chunk.append(link(name))
             flat.append(name)
+        if wrap:
+            chunk.append('<b class="join">)</b>')
+            parts.append('<span class="side">' + "".join(chunk) + "</span>")
+        else:
+            parts.extend(chunk)
     if note:
         label = "Note for " + " and ".join(flat[:3])
         parts.append(info_button(note, label))
@@ -831,6 +841,13 @@ def superset_self_test():
         errors.append("an OR on one side of a superset was drawn as another AND")
     if both_sides.count('class="join">AND') != 1 or both_sides.count('class="join">OR') != 2:
         errors.append("OR on both sides of a superset was not kept inside each side")
+    if one_side.count('class="join">(</b>') != 1 or one_side.count('class="join">)</b>') != 1:
+        errors.append("an OR beside AND was not grouped as (x OR y) AND z")
+    if both_sides.count('class="join">(</b>') != 2 or both_sides.count('class="join">)</b>') != 2:
+        errors.append("OR on both sides of a superset was not grouped as (x OR y) AND (z OR w)")
+    plain = exercise_html([["Rope Pushdown"], ["Straight-Bar Pushdown"]], "OR", "")[0]
+    if 'class="join">(</b>' in plain:
+        errors.append("a plain OR was wrapped in parentheses")
     return errors
 
 
