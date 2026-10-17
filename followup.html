@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>MemtoFit · Questions for your plan</title>
+<title>MemtoFit</title>
 <meta name="description" content="A few questions so your MemtoFit program can be shaped around you.">
 <link rel="canonical" href="https://memtofit.memtoria.com/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="MemtoFit">
 <meta property="og:url" content="https://memtofit.memtoria.com/">
-<meta property="og:title" content="MemtoFit · Questions for your plan">
+<meta property="og:title" content="MemtoFit">
 <meta property="og:description" content="A few questions so your MemtoFit program can be shaped around you.">
 <meta property="og:image" content="https://memtofit.memtoria.com/og-image.jpg?v=2">
 <meta property="og:image:secure_url" content="https://memtofit.memtoria.com/og-image.jpg?v=2">
@@ -18,7 +18,7 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="MemtoFit">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="MemtoFit · Questions for your plan">
+<meta name="twitter:title" content="MemtoFit">
 <meta name="twitter:description" content="A few questions so your MemtoFit program can be shaped around you.">
 <meta name="twitter:image" content="https://memtofit.memtoria.com/og-image.jpg?v=2">
 <style>
@@ -58,7 +58,7 @@
   }
   a.brand {
     display: block;
-    margin: 0 auto;
+    margin: 0.15rem auto 0;
     font-size: 1.35rem;
     font-weight: 800;
     letter-spacing: 0.04em;
@@ -67,11 +67,11 @@
     text-decoration: none;
   }
   .hero h1 {
-    margin: 0.7rem 0 0.35rem;
-    font-size: 1.45rem;
+    margin: 0 0 0.25rem;
+    font-size: 1.85rem;
     font-weight: 700;
     letter-spacing: -0.02em;
-    line-height: 1.25;
+    line-height: 1.15;
     color: var(--raft-fg);
   }
   .hero .sub {
@@ -81,6 +81,12 @@
     opacity: 0.88;
     font-size: 0.95rem;
     line-height: 1.4;
+  }
+  #intro {
+    margin: 0 auto 0.7rem;
+    font-size: 1.08rem;
+    font-weight: 650;
+    opacity: 0.95;
   }
   .save-status {
     margin: 0;
@@ -213,16 +219,16 @@
     cursor: pointer;
   }
   @media (min-width: 640px) {
-    .hero h1 { font-size: 1.7rem; }
+    .hero h1 { font-size: 2.15rem; }
     .brand { font-size: 1.45rem; }
   }
 </style>
 </head>
 <body>
 <header class="hero">
+  <h1 id="page-title" hidden></h1>
+  <p class="sub" id="intro" hidden>We have some follow-up questions</p>
   <a class="brand" id="home-link" href="./">MemtoFit</a>
-  <h1 id="page-title">Questions for your plan</h1>
-  <p class="sub" id="intro" hidden>Your trainer needs a few answers before the next plan.</p>
   <p class="sub" id="need-link" hidden>Open the link you were sent.</p>
   <p class="sub" id="wait" hidden>One moment.</p>
 </header>
@@ -257,6 +263,8 @@
   function showNeed(message) {
     wait.hidden = true;
     intro.hidden = true;
+    var pageTitle = document.getElementById("page-title");
+    if (pageTitle) pageTitle.hidden = true;
     need.hidden = false;
     if (message) need.textContent = message;
     form.hidden = true;
@@ -281,12 +289,14 @@
       return;
     }
     var who = niceName((session.row && session.row.name) || session.name);
-    var title = (catalog.titleIn && catalog.titleIn(existing)) ||
-      (who ? who + ", questions for your MemtoFit plan" : "Questions for your plan");
     var opening = catalog.introIn ? catalog.introIn(existing) : "";
     var pageTitle = document.getElementById("page-title");
-    if (pageTitle) pageTitle.textContent = title;
-    document.title = "MemtoFit · " + title;
+    if (pageTitle) {
+      pageTitle.textContent = who;
+      pageTitle.hidden = !who;
+    }
+    intro.textContent = "We have some follow-up questions";
+    document.title = who ? who + " · MemtoFit" : "MemtoFit";
     var answers = catalog.answersIn(existing);
     form.innerHTML = "";
     if (opening) {
@@ -306,7 +316,7 @@
     note.textContent = "Your answers are used only to build a training program that fits you. This is not a medical assessment.";
     form.appendChild(note);
     wait.hidden = true;
-    intro.hidden = true;
+    intro.hidden = false;
     need.hidden = true;
     form.hidden = false;
     toolbar.hidden = false;
