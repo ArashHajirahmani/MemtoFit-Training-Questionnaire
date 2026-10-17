@@ -4,13 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>MemtoFit</title>
-<meta name="description" content="A few questions so your MemtoFit program can be shaped around you.">
+<meta name="description" content="Answer a few questions to help your trainer tailor your MemtoFit plan.">
 <link rel="canonical" href="https://memtofit.memtoria.com/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="MemtoFit">
 <meta property="og:url" content="https://memtofit.memtoria.com/">
 <meta property="og:title" content="MemtoFit">
-<meta property="og:description" content="A few questions so your MemtoFit program can be shaped around you.">
+<meta property="og:description" content="Answer a few questions to help your trainer tailor your MemtoFit plan.">
 <meta property="og:image" content="https://memtofit.memtoria.com/og-image.jpg?v=2">
 <meta property="og:image:secure_url" content="https://memtofit.memtoria.com/og-image.jpg?v=2">
 <meta property="og:image:type" content="image/jpeg">
@@ -19,7 +19,7 @@
 <meta property="og:image:alt" content="MemtoFit">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="MemtoFit">
-<meta name="twitter:description" content="A few questions so your MemtoFit program can be shaped around you.">
+<meta name="twitter:description" content="Answer a few questions to help your trainer tailor your MemtoFit plan.">
 <meta name="twitter:image" content="https://memtofit.memtoria.com/og-image.jpg?v=2">
 <style>
   :root {
@@ -227,7 +227,7 @@
 <body>
 <header class="hero">
   <h1 id="page-title" hidden></h1>
-  <p class="sub" id="intro" hidden>We have some follow-up questions</p>
+  <p class="sub" id="intro" hidden>A few questions to shape your plan.</p>
   <a class="brand" id="home-link" href="./">MemtoFit</a>
   <p class="sub" id="need-link" hidden>Open the link you were sent.</p>
   <p class="sub" id="wait" hidden>One moment.</p>
@@ -239,9 +239,9 @@
 <main class="wrap" id="form" hidden></main>
 <footer class="site-foot"><p>v2.1 · © 2026 memtoria.com</p></footer>
 <dialog id="saved-dialog">
-  <h2>Your answers are saved!</h2>
-  <p>Contact your trainer. They can continue your plan.</p>
-  <button type="button" id="saved-ok">Got it</button>
+  <h2>Answers submitted</h2>
+  <p>Your trainer can now review your answers and continue your plan.</p>
+  <button type="button" id="saved-ok">Close</button>
 </dialog>
 <script src="config.js?v=4"></script>
 <script src="gate.js?v=5"></script>
@@ -285,7 +285,7 @@
     existing = (session.row && session.row.followup) || "";
     questions = catalog.questionsIn(existing);
     if (!questions.length) {
-      showNeed("Nothing to answer on this link yet.");
+      showNeed("There are no questions here yet. Please check with your trainer.");
       return;
     }
     var who = niceName((session.row && session.row.name) || session.name);
@@ -295,7 +295,7 @@
       pageTitle.textContent = who;
       pageTitle.hidden = !who;
     }
-    intro.textContent = "We have some follow-up questions";
+    intro.textContent = "A few questions to shape your plan.";
     document.title = who ? who + " · MemtoFit" : "MemtoFit";
     var answers = catalog.answersIn(existing);
     form.innerHTML = "";
@@ -307,13 +307,13 @@
     } else {
       var lead = document.createElement("p");
       lead.className = "lead";
-      lead.textContent = "Answer in your own words. Not sure is a fine answer.";
+      lead.textContent = "Your answers will help your trainer understand what matters for your plan. Please answer in your own words; if you're unsure about something, say so.";
       form.appendChild(lead);
     }
     for (var i = 0; i < questions.length; i++) form.appendChild(cardFor(questions[i], answers[questions[i].id] || ""));
     var note = document.createElement("p");
     note.className = "note";
-    note.textContent = "Your answers are used only to build a training program that fits you. This is not a medical assessment.";
+    note.textContent = "Your answers help your trainer tailor your plan. This form is not a medical assessment.";
     form.appendChild(note);
     wait.hidden = true;
     intro.hidden = false;
@@ -331,7 +331,7 @@
     card.appendChild(q);
     var input = document.createElement("textarea");
     input.id = fieldId(question);
-    input.placeholder = "Write what you know. Not sure is fine.";
+    input.placeholder = "Type your answer here";
     input.value = value || "";
     card.appendChild(input);
     var err = document.createElement("p");
@@ -362,7 +362,7 @@
       if (filled) setErr(cards[i], "");
       else {
         ok = false;
-        if (show) setErr(cards[i], "This one is needed. Not sure is fine.");
+        if (show) setErr(cards[i], "Please answer this question, or write ‘I'm not sure.’");
         else setErr(cards[i], "");
         if (!first) first = cards[i];
       }
@@ -418,7 +418,7 @@
     if (!status) return;
     status.hidden = false;
     status.classList.add("bad");
-    status.textContent = "Could not submit. Try again.";
+    status.textContent = "Your answers weren't submitted. Please try again.";
   }
 
   if (form) {
