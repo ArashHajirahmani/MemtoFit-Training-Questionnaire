@@ -57,6 +57,18 @@
     return out;
   }
 
+  function plain(text, marker) {
+    return sectionBody(text, marker).replace(/\s+/g, " ").trim();
+  }
+
+  function titleIn(text) {
+    return plain(text, "title");
+  }
+
+  function introIn(text) {
+    return plain(text, "intro");
+  }
+
   function build(prompts) {
     var lines = ["# Follow-up", "", "## Questions", "<!-- questions -->", ""];
     var n = 0;
@@ -82,7 +94,12 @@
     var answers = answersIn(existing);
     var ids = Object.keys(updates || {});
     for (var u = 0; u < ids.length; u++) answers[ids[u]] = updates[ids[u]];
-    var lines = ["# Follow-up", "", "## Questions", "<!-- questions -->", ""];
+    var lines = ["# Follow-up", ""];
+    var title = titleIn(existing);
+    var intro = introIn(existing);
+    if (title) lines.push("## Title", "<!-- title -->", "", title, "");
+    if (intro) lines.push("## Intro", "<!-- intro -->", "", intro, "");
+    lines.push("## Questions", "<!-- questions -->", "");
     for (var q = 0; q < questions.length; q++) {
       lines.push("- **" + questions[q].id + ":** " + questions[q].prompt);
     }
@@ -97,6 +114,8 @@
   root.MEMTOFIT_FOLLOWUPS = {
     questionsIn: questionsIn,
     answersIn: answersIn,
+    titleIn: titleIn,
+    introIn: introIn,
     build: build,
     withAnswers: withAnswers
   };
