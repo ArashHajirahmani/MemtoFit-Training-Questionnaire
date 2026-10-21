@@ -8,6 +8,7 @@ import html
 import os
 import re
 import sys
+from datetime import date
 from pathlib import Path
 from urllib.parse import quote
 
@@ -292,7 +293,7 @@ def info_button(text, label, on_dark=False):
 
 
 def yt(name):
-    phrase = quote(f'"{name}"', safe="").replace("%20", "+")
+    phrase = quote(f'how to do "{name}" exercise', safe="").replace("%20", "+")
     return "https://www.google.com/search?q=" + phrase + "+site%3Ayoutube.com&udm=7&tbs=dur%3As"
 
 
@@ -441,6 +442,46 @@ def iso_date(line):
 def week_total(line):
     match = re.search(r"\b(\d+)\s+weeks\b", line or "", re.I)
     return match.group(1) if match else ""
+
+
+def cycle_metadata(plan):
+    """Finish is the exclusive review boundary, not an extra training week."""
+    start, finish = iso_date(plan["start"]), iso_date(plan["finish"])
+    try:
+        days = (date.fromisoformat(finish) - date.fromisoformat(start)).days
+    except ValueError:
+        raise SystemExit("Program Start and Finish must contain valid dates with years.")
+    if days <= 0:
+        raise SystemExit("Program Finish must be after Start.")
+    total = (days + 6) // 7
+    stated = week_total(plan["finish"])
+    if stated and int(stated) != total:
+        raise SystemExit("Finish week count conflicts with the Start/Finish dates.")
+    return start, str(total)
+
+
+def feedback_prompts(body, weeks):
+    """Optional, authored prompts: at most three across the entire program."""
+    prompts = {}
+    for line in (body or "").splitlines():
+        if not line.strip().startswith("|"):
+            continue
+        row = cells(line)
+        if is_rule(row) or row == ["Week", "Day", "Feedback prompt"]:
+            continue
+        if len(row) != 3 or not row[0].isdigit() or not row[1].isdigit():
+            raise SystemExit("Critical feedback needs Week | Day | Feedback prompt rows.")
+        week, day = int(row[0]) - 1, int(row[1]) - 1
+        if not (0 <= week < len(weeks) and 0 <= day < len(weeks[week]["days"])):
+            raise SystemExit("Critical feedback references a missing week/day.")
+        key = f"{week}-{day}"
+        prompt = row[2].strip()
+        if key in prompts or not prompt or len(prompt) > 120:
+            raise SystemExit("Use one short critical feedback prompt per chosen session (max 120 characters).")
+        prompts[key] = prompt
+    if len(prompts) > 3:
+        raise SystemExit("Critical feedback is limited to three prompts per program, across all weeks.")
+    return prompts
 
 
 def find_month(line):
@@ -941,6 +982,8 @@ def render(plan, notes, person, slot):
     day_count = len(weeks[0]["days"])
     if any(len(week["days"]) != day_count for week in weeks):
         raise SystemExit("Each week needs the same number of days.")
+    start_date, total_weeks = cycle_metadata(plan)
+    feedback = feedback_prompts(found.get("Critical feedback", ""), weeks)
 
     start_m = find_month(plan["start"])
     finish_m = find_month(plan["finish"]) or start_m
@@ -1007,7 +1050,7 @@ def render(plan, notes, person, slot):
             note_box = (
                 f'<label class="day-note-wrap"><span>Note</span>'
                 f'<textarea class="day-note" data-day="{w_index}-{d_index}" '
-                f'placeholder="Note for this day"></textarea></label>'
+                f'placeholder="Note for this day">{html.escape(feedback.get(f"{w_index}-{d_index}", ""))}</textarea></label>'
             )
             parts.append(
                 f'<section class="panel" data-panel="{w_index}-{d_index}" role="tabpanel" '
@@ -1062,8 +1105,8 @@ def render(plan, notes, person, slot):
         "{{DESCRIPTION}}": html.escape(f"{nice}{apos}s personalized gym plan."),
         "{{H1_HTML}}": h1,
         "{{PERIOD}}": html.escape(period),
-        "{{START_DATE}}": html.escape(iso_date(plan["start"])),
-        "{{WEEK_TOTAL}}": html.escape(week_total(plan["finish"])),
+        "{{START_DATE}}": start_date,
+        "{{WEEK_TOTAL}}": total_weeks,
         "{{GOAL}}": html.escape(goal),
         "{{STORAGE_KEY}}": html.escape(f"memtofit-done-{slot}"),
         "{{WEEK_BUTTONS}}": "\n    ".join(week_buttons),

@@ -252,7 +252,7 @@
   function put(map, key, value) {
     if (!key) return;
     if (value) map[key] = { v: value, at: new Date().toISOString() };
-    else delete map[key];
+    else map[key] = { v: "", at: new Date().toISOString() };
     persist();
   }
 
