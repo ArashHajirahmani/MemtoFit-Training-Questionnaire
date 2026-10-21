@@ -35,24 +35,15 @@ class PublisherTests(unittest.TestCase):
             self.assertEqual(query["udm"], ["7"])
             self.assertEqual(query["tbs"], ["dur:s"])
 
-    def test_at_most_three_prompts_across_both_weeks(self):
-        body = "| Week | Day | Feedback prompt |\n|---|---|---|\n| 1 | 1 | Setup comfort: |\n| 1 | 2 | Hip response: |\n| 2 | 3 | Skipped at cap: |"
-        prompts = b.feedback_prompts(body, plan()["weeks"])
-        self.assertEqual(len(prompts), 3)
-        self.assertEqual(prompts["1-2"], "Skipped at cap:")
-        with self.assertRaises(SystemExit):
-            b.feedback_prompts(body + "\n| 2 | 1 | Fourth: |", plan()["weeks"])
-
-    def test_invalid_feedback_targets_and_length(self):
-        for body in ("| 3 | 1 | Missing week: |", "| 1 | 4 | Missing day: |", "| 1 | 1 | |", "| 1 | 1 | First: |\n| 1 | 1 | Duplicate: |", "| 1 | 1 | " + "x" * 121 + " |"):
-            with self.subTest(body=body), self.assertRaises(SystemExit):
-                b.feedback_prompts(body, plan()["weeks"])
-
-    def test_render_progress_and_feedback_defaults(self):
-        page, _ = b.render(plan(), "## Critical feedback\n| Week | Day | Feedback prompt |\n|---|---|---|\n| 1 | 2 | Setup <comfort>: |", "Test", "test-slot")
+    def test_render_keeps_all_note_defaults_empty(self):
+        # A stale source section must never reintroduce anticipated symptom prompts.
+        page, _ = b.render(plan(), "## Critical feedback\n| Week | Day | Feedback prompt |\n|---|---|---|\n| 1 | 2 | Setup comfort: |", "Test", "test-slot")
         self.assertIn('data-start="2026-10-26" data-weeks="12"', page)
-        self.assertEqual(page.count('>Setup &lt;comfort&gt;:</textarea>'), 1)
-        self.assertIn('data-day="0-1" placeholder="Note for this day">Setup &lt;comfort&gt;:', page)
+        import re
+        fields = re.findall(r'<textarea\b[^>]*>(.*?)</textarea>', page, re.S)
+        self.assertEqual(len(fields), 6)
+        self.assertTrue(all(value == "" for value in fields))
+        self.assertNotIn('Setup comfort:', page)
 
     def test_superset_contract(self):
         self.assertEqual(b.superset_self_test(), [])

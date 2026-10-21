@@ -460,30 +460,6 @@ def cycle_metadata(plan):
     return start, str(total)
 
 
-def feedback_prompts(body, weeks):
-    """Optional, authored prompts: at most three across the entire program."""
-    prompts = {}
-    for line in (body or "").splitlines():
-        if not line.strip().startswith("|"):
-            continue
-        row = cells(line)
-        if is_rule(row) or row == ["Week", "Day", "Feedback prompt"]:
-            continue
-        if len(row) != 3 or not row[0].isdigit() or not row[1].isdigit():
-            raise SystemExit("Critical feedback needs Week | Day | Feedback prompt rows.")
-        week, day = int(row[0]) - 1, int(row[1]) - 1
-        if not (0 <= week < len(weeks) and 0 <= day < len(weeks[week]["days"])):
-            raise SystemExit("Critical feedback references a missing week/day.")
-        key = f"{week}-{day}"
-        prompt = row[2].strip()
-        if key in prompts or not prompt or len(prompt) > 120:
-            raise SystemExit("Use one short critical feedback prompt per chosen session (max 120 characters).")
-        prompts[key] = prompt
-    if len(prompts) > 3:
-        raise SystemExit("Critical feedback is limited to three prompts per program, across all weeks.")
-    return prompts
-
-
 def find_month(line):
     match = re.search(
         r"\b(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|"
@@ -983,7 +959,6 @@ def render(plan, notes, person, slot):
     if any(len(week["days"]) != day_count for week in weeks):
         raise SystemExit("Each week needs the same number of days.")
     start_date, total_weeks = cycle_metadata(plan)
-    feedback = feedback_prompts(found.get("Critical feedback", ""), weeks)
 
     start_m = find_month(plan["start"])
     finish_m = find_month(plan["finish"]) or start_m
@@ -1050,7 +1025,7 @@ def render(plan, notes, person, slot):
             note_box = (
                 f'<label class="day-note-wrap"><span>Note</span>'
                 f'<textarea class="day-note" data-day="{w_index}-{d_index}" '
-                f'placeholder="Note for this day">{html.escape(feedback.get(f"{w_index}-{d_index}", ""))}</textarea></label>'
+                f'placeholder="Note for this day"></textarea></label>'
             )
             parts.append(
                 f'<section class="panel" data-panel="{w_index}-{d_index}" role="tabpanel" '

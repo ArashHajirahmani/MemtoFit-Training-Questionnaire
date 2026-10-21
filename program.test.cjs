@@ -44,7 +44,7 @@ async function landing(plan, today) {
   const legacy = await landing(html.replace('data-weeks="12"', 'data-weeks=""'), new Date(2026, 9, 20));
   assert.equal(legacy.destination, '', 'unknown legacy dates retain accessible choices');
 
-  // Execute the actual hydration listener: authored defaults must never replace user notes.
+  // Execute the actual hydration listener: only saved user notes are shown; unsaved fields stay blank.
   const template = read('plan-template.html');
   const hydration = template.slice(template.indexOf('  window.addEventListener("message",'), template.indexOf('  tell({ type: "memtofit-ready" });'));
   const parent = {};
@@ -55,20 +55,9 @@ async function landing(plan, today) {
   vm.runInNewContext(hydration, {window: {parent, addEventListener: (_, fn) => {handle = fn;}},
     document: {querySelectorAll: selector => selector === '.day-note' ? notes : []}, applyUnit() {}, applyLoad() {}, applyPlace() {}});
   handle({source: parent, data: {type: 'memtofit-hydrate', data: {days: {'0-1': {v: 'My existing feedback'}, '0-2': {v: ''}}}}});
-  assert.deepEqual(notes.map(n => n.value), ['Setup comfort:', 'My existing feedback', '']);
+  assert.deepEqual(notes.map(n => n.value), ['', 'My existing feedback', '']);
   handle({source: {}, data: {type: 'memtofit-hydrate', data: {days: {}}}});
   assert.equal(notes[1].value, 'My existing feedback', 'ignore messages from other sources');
 
-  // Clearing a prompt remains a dated user choice, so it stays cleared after reload/merge.
-  const program = read('program.js');
-  const put = program.slice(program.indexOf('  function put(map,'), program.indexOf('  function putLoad('));
-  let saves = 0;
-  const context = {Date, persist() {saves++;}};
-  vm.runInNewContext(put, context);
-  const days = {};
-  context.put(days, '0-0', '');
-  assert.equal(days['0-0'].v, '');
-  assert.ok(days['0-0'].at);
-  assert.equal(saves, 1);
-  console.log('Entry-page policy, feedback hydration and cleared-note checks passed');
+  console.log('Entry-page policy and empty-note hydration checks passed');
 })().catch(error => {console.error(error); process.exitCode = 1;});

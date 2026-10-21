@@ -397,7 +397,7 @@ a.trainer-portfolio.info{text-decoration:none}
     const days = msg.data.days || {};
     document.querySelectorAll(".day-note").forEach((note) => {
       const rec = days[note.dataset.day];
-      note.value = rec && typeof rec.v === "string" ? rec.v : note.defaultValue;
+      note.value = rec && rec.v ? rec.v : "";
     });
     if (msg.place) applyPlace(msg.place.week, msg.place.day, false);
   });
