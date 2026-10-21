@@ -82,10 +82,13 @@
         var fields = blocks[i].querySelectorAll("input, select");
         var what = fields[0] && fields[0].value.trim();
         var level = fields[2] && fields[2].value.trim();
-        if (what && !level) limOk = false;
+        var side = fields[1] && fields[1].value.trim();
+        if (fields[2]) fields[2].required = !!what;
+        if (what && !/^[1-4](?:\s|$)/.test(level)) limOk = false;
+        if (!what && (side || level)) limOk = false;
       }
     }
-    need(limList && limList.closest(".card"), limOk, "Each limitation needs a level.");
+    need(limList && limList.closest(".card"), limOk, "Enter each injury or limitation and choose a level from 1 to 4.");
 
     var flag = ok ? "false" : "true";
     if (printBtn) printBtn.setAttribute("aria-disabled", flag);

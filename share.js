@@ -132,7 +132,7 @@
 
   function submitAnswers() {
     if (saving) return;
-    if (window.memtofitReady && !window.memtofitReady()) return;
+    if (typeof window.memtofitReady !== "function" || !window.memtofitReady()) return;
     var text = buildMarkdown();
     var status = document.getElementById("save-status");
     var btn = document.getElementById("submit-btn");
