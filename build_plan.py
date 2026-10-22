@@ -945,7 +945,19 @@ def bonus_present(plan):
     return any(plan.get(name) for name in ("bonus", "support", "coverage", "cardio", "optional"))
 
 
-def render(plan, notes, person, slot):
+def issue_date(value):
+    """Require a recorded calendar date, never infer it from a build or visit."""
+    try:
+        parsed = date.fromisoformat(value)
+        if parsed.isoformat() != value:
+            raise ValueError
+    except (TypeError, ValueError):
+        raise ValueError("Issue date must be YYYY-MM-DD (no time).") from None
+    return parsed
+
+
+def render(plan, notes, person, slot, issued_on):
+    issued = issue_date(issued_on)
     found = sections(notes)
     tables = exercise_rows(found.get("Exercise notes", ""))
     day_body = day_section(found)
@@ -1080,6 +1092,8 @@ def render(plan, notes, person, slot):
         "{{DESCRIPTION}}": html.escape(f"{nice}{apos}s personalized gym plan."),
         "{{H1_HTML}}": h1,
         "{{PERIOD}}": html.escape(period),
+        "{{ISSUED_ON}}": issued.isoformat(),
+        "{{ISSUED_DATE}}": f"{issued.strftime('%b')} {issued.day}, {issued.year}",
         "{{START_DATE}}": start_date,
         "{{WEEK_TOTAL}}": total_weeks,
         "{{GOAL}}": html.escape(goal),
@@ -1120,6 +1134,8 @@ def main():
     parser.add_argument("--notes", type=Path)
     parser.add_argument("--name", required=True)
     parser.add_argument("--slot", required=True)
+    parser.add_argument("--issued-on", required=True, type=issue_date,
+                        help="Recorded program issue date, YYYY-MM-DD; preserve it for presentation-only rebuilds.")
     parser.add_argument("--out", type=Path)
     parser.add_argument("--encrypt-out", type=Path)
     args = parser.parse_args()
@@ -1136,6 +1152,7 @@ def main():
         notes.read_text(),
         args.name.strip(),
         args.slot.strip(),
+        args.issued_on.isoformat(),
     )
     if args.out:
         args.out.write_text(page)

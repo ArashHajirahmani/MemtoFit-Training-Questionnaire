@@ -299,7 +299,7 @@
     );
     if (html.indexOf("site-foot") === -1 && html.indexOf("</body>") !== -1) {
       var css = ".site-foot{margin:0;padding:8px 14px calc(18px + env(safe-area-inset-bottom,0px));text-align:center;color:#667061;font-size:12px;line-height:1.4}.site-foot p{margin:0}";
-      var foot = '<footer class="site-foot"><p>v2.1 · © 2026 memtoria.com</p></footer>';
+      var foot = '<footer class="site-foot"><p>© 2026 memtoria.com</p></footer>';
       if (html.indexOf("</style>") !== -1) html = html.replace("</style>", css + "</style>");
       html = html.replace("</body>", foot + "</body>");
     }

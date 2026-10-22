@@ -37,13 +37,25 @@ class PublisherTests(unittest.TestCase):
 
     def test_render_keeps_all_note_defaults_empty(self):
         # A stale source section must never reintroduce anticipated symptom prompts.
-        page, _ = b.render(plan(), "## Critical feedback\n| Week | Day | Feedback prompt |\n|---|---|---|\n| 1 | 2 | Setup comfort: |", "Test", "test-slot")
+        page, _ = b.render(plan(), "## Critical feedback\n| Week | Day | Feedback prompt |\n|---|---|---|\n| 1 | 2 | Setup comfort: |", "Test", "test-slot", "2026-10-13")
         self.assertIn('data-start="2026-10-26" data-weeks="12"', page)
         import re
         fields = re.findall(r'<textarea\b[^>]*>(.*?)</textarea>', page, re.S)
         self.assertEqual(len(fields), 6)
         self.assertTrue(all(value == "" for value in fields))
         self.assertNotIn('Setup comfort:', page)
+
+    def test_footer_preserves_recorded_issue_date(self):
+        page, _ = b.render(plan(), "", "Test", "test-slot", "2026-10-13")
+        self.assertIn('Issued on <time datetime="2026-10-13">Oct 13, 2026</time>', page)
+        self.assertNotIn('v2.1', page)
+        self.assertNotIn('{{', page)
+
+    def test_issue_date_requires_calendar_date_without_time(self):
+        for value in (None, "", "20261013", "2026-02-30", "2026-10-13T12:00:00Z"):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                b.issue_date(value)
+        self.assertEqual(b.issue_date("2028-02-29").isoformat(), "2028-02-29")
 
     def test_superset_contract(self):
         self.assertEqual(b.superset_self_test(), [])
