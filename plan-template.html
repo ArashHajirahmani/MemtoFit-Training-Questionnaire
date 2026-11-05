@@ -48,6 +48,42 @@ h1 .info{margin-left:8px;position:relative;top:-6px}
 .trainer-chat svg{display:block}
 a.trainer-portfolio.info{text-decoration:none}
 @media(max-width:420px){.trainer-name{font-size:13px}.trainer-role{font-size:11px}}
+.day-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:0 2px}
+.day-head-main{min-width:0;flex:1 1 auto}
+.day-head-main .eyebrow,.day-head-main h2{margin-left:0;margin-right:0}
+.day-head-side{flex:0 0 auto;margin-left:auto}
+.day-head-slot{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:5.5rem;text-align:center}
+.active-on{display:flex;flex-direction:column;align-items:center;gap:2px}
+.active-on[hidden],.switch-program[hidden],.activate-day[hidden]{display:none}
+.active-on-label{display:block;color:var(--muted);font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.active-on-date{display:block;color:var(--ink);font-size:13px;font-weight:750;font-variant-numeric:tabular-nums;line-height:1.2}
+.active-on-clear{appearance:none;display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;margin:2px 0 0;padding:0;border:0;border-radius:6px;background:transparent;color:#b42318;font:700 18px/1 system-ui,-apple-system,"Segoe UI",sans-serif;cursor:pointer}
+.active-on-clear:hover{background:#f8e4e2}
+.switch-program,.activate-day{appearance:none;display:inline-flex;align-items:center;justify-content:center;min-height:32px;margin:0;padding:6px 10px;border-radius:10px;font:750 12px/1.2 system-ui,-apple-system,"Segoe UI",sans-serif;cursor:pointer;touch-action:manipulation;text-align:center}
+.switch-program{border:1.5px solid var(--orange);background:#FFF4E6;color:var(--deep)}
+.activate-day{border:1.5px solid #B7BDB4;background:#EEF0EA;color:#667061}
+.panel.on-history .done-toggle,.panel.on-history .done-time,.panel.on-history .load,.panel.on-history .load-view{display:none!important}
+.panel.on-history .day-note{display:none}
+.day-note-view{display:none;width:100%;min-height:4.6rem;padding:10px 12px;border:1.5px solid #B7BDB4;border-radius:12px;background:#EEF0EA;color:#667061;font:inherit;font-size:15px;font-weight:500;white-space:pre-wrap;word-break:break-word}
+.panel.on-history .day-note-view{display:block}
+.mode-confirm{position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;padding:1rem;background:#181F1740}
+.mode-confirm[hidden]{display:none}
+.mode-confirm-card{width:min(20rem,100%);padding:1rem 1rem .9rem;border:1px solid var(--line);border-radius:14px;background:#fff;box-shadow:0 10px 28px #22301C24;text-align:center}
+.mode-confirm-card p{margin:0 0 .9rem;color:var(--ink);font-size:15px;font-weight:600;line-height:1.35}
+.mode-confirm-actions{display:flex;gap:8px;justify-content:center}
+.mode-confirm-actions button{min-height:40px;min-width:5.5rem;padding:0 12px;border-radius:10px;font:750 13px/1 system-ui,-apple-system,"Segoe UI",sans-serif;cursor:pointer}
+.mode-confirm-cancel{border:1.5px solid var(--line);background:#fff;color:var(--muted)}
+.mode-confirm-ok{border:0;background:var(--green);color:#F2F2F2}
+.celebrate{position:fixed;inset:0;z-index:50;pointer-events:none;overflow:hidden}
+.celebrate[hidden]{display:none}
+.celebrate-piece{position:absolute;top:-12px;border-radius:2px;opacity:1;will-change:transform,opacity;animation:celebrate-fall linear forwards}
+@keyframes celebrate-fall{
+  0%{transform:translate3d(0,0,0) rotate(0deg);opacity:1}
+  80%{opacity:1}
+  100%{transform:translate3d(var(--drift,0),110vh,0) rotate(720deg);opacity:0}
+}
+@media(prefers-reduced-motion:reduce){.celebrate,.celebrate-piece{display:none!important;animation:none!important}}
+@media(max-width:420px){.day-head{gap:8px}.switch-program,.activate-day{padding:5px 8px;font-size:11px}.day-head-slot{min-width:4.8rem}}
 </style>
 </head>
 <body data-storage-key="{{STORAGE_KEY}}">
@@ -176,7 +212,319 @@ a.trainer-portfolio.info{text-decoration:none}
   const storageKey = document.body.dataset.storageKey;
   let saved = {};
   let unitLabel = "lb";
+  let active = null;
+  const ACTIVE_HOURS = 11;
   try { saved = JSON.parse(localStorage.getItem(storageKey) || "{}"); } catch (err) {}
+
+  function panelId(panel) {
+    return panel && panel.dataset ? panel.dataset.panel : "";
+  }
+  function parsePanelId(id) {
+    const parts = String(id || "").split("-");
+    if (parts.length !== 2) return null;
+    const w = Number(parts[0]);
+    const d = Number(parts[1]);
+    if (!Number.isFinite(w) || !Number.isFinite(d)) return null;
+    return { week: w, day: d };
+  }
+  function nextPanelId(id) {
+    const place = parsePanelId(id);
+    if (!place) return id;
+    let w = place.week;
+    let d = place.day + 1;
+    if (d >= dayCount) {
+      w += 1;
+      d = 0;
+    }
+    if (w >= (weekTabs.length || 1)) {
+      w = Math.max(0, (weekTabs.length || 1) - 1);
+      d = Math.max(0, dayCount - 1);
+    }
+    return w + "-" + d;
+  }
+  function formatActiveDate(iso) {
+    const when = new Date(iso);
+    if (isNaN(when.getTime())) return "";
+    const pad = (n) => String(n).padStart(2, "0");
+    return when.getFullYear() + "/" + pad(when.getMonth() + 1) + "/" + pad(when.getDate());
+  }
+  function normalizeActive(raw) {
+    if (!raw || typeof raw !== "object") return null;
+    if (raw.idle) return { idle: true };
+    const id = String(raw.panel || "");
+    if (!parsePanelId(id) || !panels.some((p) => panelId(p) === id)) return null;
+    const pending = !!raw.pending;
+    const at = raw.at ? String(raw.at) : null;
+    if (!pending && !at) return null;
+    return { panel: id, at: pending ? null : at, pending: pending };
+  }
+  function activeStorageKey() {
+    return storageKey + "-active";
+  }
+  function readLocalActive() {
+    try { return normalizeActive(JSON.parse(localStorage.getItem(activeStorageKey()) || "null")); }
+    catch (err) { return null; }
+  }
+  function writeLocalActive() {
+    try {
+      if (active) localStorage.setItem(activeStorageKey(), JSON.stringify(active));
+      else localStorage.removeItem(activeStorageKey());
+    } catch (err) {}
+  }
+  function saveActiveState() {
+    writeLocalActive();
+    tell({ type: "memtofit-save-active", active: active });
+  }
+  function setActiveState(next) {
+    active = normalizeActive(next);
+    saveActiveState();
+  }
+  function persistChecks() {
+    try { localStorage.setItem(storageKey, JSON.stringify(saved)); } catch (err) {}
+  }
+  function panelHasChecks(panel) {
+    const id = panelId(panel);
+    if (!id) return false;
+    const prefix = id + "-";
+    return Object.keys(saved).some((key) => key === id || key.indexOf(prefix) === 0);
+  }
+  function anyPanelHasChecks() {
+    return panels.some((panel) => panelHasChecks(panel));
+  }
+  function clearSessionChecks(panel) {
+    if (!panel) return;
+    const id = panelId(panel);
+    if (!id) return;
+    const prefix = id + "-";
+    Object.keys(saved).forEach((key) => {
+      if (key === id || key.indexOf(prefix) === 0) delete saved[key];
+    });
+    panel.querySelectorAll(".done-box").forEach((check) => {
+      check.checked = false;
+      const time = check.closest(".prescription") && check.closest(".prescription").querySelector(".done-time");
+      if (time) {
+        time.textContent = "";
+        time.hidden = true;
+      }
+      const load = check.closest(".prescription") && check.closest(".prescription").querySelector(".load");
+      if (load) {
+        load.value = "";
+        load.hidden = true;
+        load.placeholder = hint(load);
+      }
+    });
+    persistChecks();
+  }
+  function clearAllSessionChecks() {
+    panels.forEach((panel) => clearSessionChecks(panel));
+  }
+  function preferActive(server, local) {
+    if (!local) return server || null;
+    if (!server) return local;
+    if (!!local.idle !== !!server.idle) return local.idle ? local : server;
+    if (local.idle && server.idle) return local;
+    if (!!local.pending !== !!server.pending) return local.pending ? local : server;
+    if ((local.at || "") >= (server.at || "")) return local;
+    return server;
+  }
+  function ensureHistoryNote(panel) {
+    const note = panel.querySelector(".day-note");
+    if (!note) return;
+    let view = panel.querySelector(".day-note-view");
+    if (!view) {
+      view = document.createElement("div");
+      view.className = "day-note-view";
+      view.setAttribute("aria-live", "polite");
+      note.insertAdjacentElement("afterend", view);
+    }
+    view.textContent = String(note.value || "").trim();
+    panel.querySelectorAll(".load-view").forEach((el) => el.remove());
+  }
+  function paintPanelMode(panel, mode) {
+    if (panel.classList.contains("bonus-panel")) return;
+    const activeOn = panel.querySelector(".active-on");
+    const switchBtn = panel.querySelector(".switch-program");
+    const activateBtn = panel.querySelector(".activate-day");
+    const dateEl = panel.querySelector(".active-on-date");
+    if (mode === "history") {
+      panel.classList.add("on-history");
+      if (activeOn) activeOn.hidden = true;
+      if (switchBtn) switchBtn.hidden = true;
+      if (activateBtn) activateBtn.hidden = false;
+      ensureHistoryNote(panel);
+      return;
+    }
+    panel.classList.remove("on-history");
+    if (activateBtn) activateBtn.hidden = true;
+    if (mode === "locked") {
+      if (activeOn) {
+        activeOn.hidden = false;
+        if (dateEl) {
+          dateEl.textContent = active && active.at ? formatActiveDate(active.at) : "";
+          dateEl.dateTime = active && active.at ? active.at : "";
+        }
+      }
+      if (switchBtn) switchBtn.hidden = true;
+      return;
+    }
+    if (mode === "pending") {
+      if (activeOn) activeOn.hidden = true;
+      if (switchBtn) switchBtn.hidden = false;
+      return;
+    }
+    if (activeOn) activeOn.hidden = true;
+    if (switchBtn) switchBtn.hidden = true;
+  }
+  function applyMode() {
+    panels.forEach((panel) => {
+      const id = panelId(panel);
+      if (!active) paintPanelMode(panel, "ongoing");
+      else if (active.idle) paintPanelMode(panel, "history");
+      else if (active.pending) paintPanelMode(panel, id === active.panel ? "pending" : "history");
+      else paintPanelMode(panel, id === active.panel ? "locked" : "history");
+    });
+  }
+  function maybeAutoAdvance() {
+    if (!active || active.idle || active.pending || !active.at) return false;
+    const when = new Date(active.at);
+    if (isNaN(when.getTime())) return false;
+    if (Date.now() - when.getTime() < ACTIVE_HOURS * 3600 * 1000) return false;
+    const next = nextPanelId(active.panel);
+    active = { panel: next, at: null, pending: true };
+    saveActiveState();
+    return true;
+  }
+  function placeFromActive() {
+    if (!active || active.idle || !active.panel) return null;
+    return parsePanelId(active.panel);
+  }
+  function activateFromCheck(panel) {
+    if (!panel || panel.classList.contains("bonus-panel")) return;
+    const id = panelId(panel);
+    if (!id) return;
+    if (active && active.idle) return;
+    if (active && !active.pending && active.panel === id) return;
+    if (active && active.pending && active.panel !== id) return;
+    if (active && !active.pending && active.panel !== id) return;
+    setActiveState({ panel: id, at: new Date().toISOString(), pending: false });
+    applyMode();
+  }
+  function claimDay(panel) {
+    if (!panel || panel.classList.contains("bonus-panel")) return;
+    const id = panelId(panel);
+    if (!id) return;
+    clearSessionChecks(panel);
+    setActiveState({ panel: id, at: new Date().toISOString(), pending: false });
+    applyMode();
+  }
+  function archiveToHistory(panel) {
+    if (panel) clearSessionChecks(panel);
+    setActiveState({ idle: true });
+    applyMode();
+  }
+  function unlockAllOngoing() {
+    clearAllSessionChecks();
+    active = null;
+    saveActiveState();
+    applyMode();
+  }
+  const confirmEl = document.createElement("div");
+  confirmEl.className = "mode-confirm";
+  confirmEl.hidden = true;
+  confirmEl.innerHTML = '<div class="mode-confirm-card" role="dialog" aria-modal="true">'
+    + '<p class="mode-confirm-msg"></p>'
+    + '<div class="mode-confirm-actions">'
+    + '<button type="button" class="mode-confirm-cancel">Cancel</button>'
+    + '<button type="button" class="mode-confirm-ok">Confirm</button>'
+    + "</div></div>";
+  document.body.appendChild(confirmEl);
+  const confirmMsg = confirmEl.querySelector(".mode-confirm-msg");
+  let confirmAction = null;
+  function closeConfirm() {
+    confirmEl.hidden = true;
+    confirmAction = null;
+  }
+  function askConfirm(message, action) {
+    confirmMsg.textContent = message;
+    confirmAction = action;
+    confirmEl.hidden = false;
+  }
+  confirmEl.querySelector(".mode-confirm-cancel").addEventListener("click", (e) => {
+    e.preventDefault();
+    closeConfirm();
+  });
+  confirmEl.querySelector(".mode-confirm-ok").addEventListener("click", (e) => {
+    e.preventDefault();
+    const run = confirmAction;
+    closeConfirm();
+    if (run) run();
+  });
+  confirmEl.addEventListener("click", (e) => {
+    if (e.target === confirmEl) closeConfirm();
+  });
+  function requestArchive(panel) {
+    const run = () => archiveToHistory(panel);
+    if (panelHasChecks(panel)) askConfirm("Clear today’s checks and archive this day?", run);
+    else run();
+  }
+  function requestUnlock() {
+    const run = () => unlockAllOngoing();
+    if (anyPanelHasChecks()) askConfirm("Clear checks and unlock all days?", run);
+    else run();
+  }
+  const CELEBRATE_COLORS = ["#2C4A27", "#FAAF58", "#F99E34", "#9BBE91", "#547C4B", "#FFF4E6"];
+  let celebrateLayer = null;
+  let celebrateTimer = 0;
+  function prefersReducedMotion() {
+    try { return window.matchMedia("(prefers-reduced-motion: reduce)").matches; }
+    catch (err) { return false; }
+  }
+  function panelComplete(panel) {
+    const boxes = panel ? panel.querySelectorAll(".done-box") : [];
+    if (!boxes.length) return false;
+    return [...boxes].every((box) => box.checked);
+  }
+  function celebrateSession(panel) {
+    if (!panel || panel.classList.contains("bonus-panel") || panel.classList.contains("on-history")) return;
+    if (prefersReducedMotion()) return;
+    if (celebrateTimer) {
+      clearTimeout(celebrateTimer);
+      celebrateTimer = 0;
+    }
+    if (celebrateLayer) celebrateLayer.remove();
+    celebrateLayer = document.createElement("div");
+    celebrateLayer.className = "celebrate";
+    celebrateLayer.setAttribute("aria-hidden", "true");
+    const count = 36;
+    for (let i = 0; i < count; i++) {
+      const piece = document.createElement("span");
+      piece.className = "celebrate-piece";
+      const size = 6 + (i % 5);
+      const left = (i * 37 + 11) % 100;
+      const drift = ((i % 9) - 4) * 18;
+      const duration = 4.8 + (i % 6) * 0.2;
+      const delay = (i % 10) * 0.12;
+      piece.style.left = left + "%";
+      piece.style.width = size + "px";
+      piece.style.height = (size + (i % 3)) + "px";
+      piece.style.background = CELEBRATE_COLORS[i % CELEBRATE_COLORS.length];
+      piece.style.borderRadius = i % 3 === 0 ? "50%" : "2px";
+      piece.style.setProperty("--drift", drift + "px");
+      piece.style.animationDuration = duration + "s";
+      piece.style.animationDelay = delay + "s";
+      celebrateLayer.appendChild(piece);
+    }
+    document.body.appendChild(celebrateLayer);
+    celebrateTimer = setTimeout(() => {
+      if (celebrateLayer) celebrateLayer.remove();
+      celebrateLayer = null;
+      celebrateTimer = 0;
+    }, 6000);
+  }
+  function maybeCelebrate(panel) {
+    if (!panelComplete(panel)) return;
+    celebrateSession(panel);
+  }
 
   function numeric(raw) {
     const cleaned = String(raw || "").replace(",", ".").replace(/[^\d.]/g, "");
@@ -244,6 +592,10 @@ a.trainer-portfolio.info{text-decoration:none}
         setTimeout(() => { if (document.activeElement === load) load.blur(); }, 0);
       }
       check.addEventListener("change", () => {
+        if (panel.classList.contains("on-history")) {
+          check.checked = !check.checked;
+          return;
+        }
         if (check.checked) {
           const now = new Date();
           const stamp = String(now.getHours()).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0");
@@ -251,6 +603,8 @@ a.trainer-portfolio.info{text-decoration:none}
           time.textContent = stamp;
           time.hidden = false;
           showLog();
+          activateFromCheck(panel);
+          maybeCelebrate(panel);
         } else {
           delete saved[key];
           time.textContent = "";
@@ -265,6 +619,7 @@ a.trainer-portfolio.info{text-decoration:none}
           if (next !== load.value) load.value = next;
         });
         load.addEventListener("change", () => {
+          if (panel.classList.contains("on-history")) return;
           const v = cleanScore(load).replace(/\.$/, "");
           load.value = v;
           document.querySelectorAll(".load").forEach((other) => {
@@ -284,9 +639,25 @@ a.trainer-portfolio.info{text-decoration:none}
     const note = panel.querySelector(".day-note");
     if (note) {
       note.addEventListener("change", () => {
+        if (panel.classList.contains("on-history")) return;
         tell({ type: "memtofit-save-day", key: note.dataset.day, value: note.value.trim() });
       });
     }
+    const clearBtn = panel.querySelector(".active-on-clear");
+    if (clearBtn) clearBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      requestArchive(panel);
+    });
+    const switchBtn = panel.querySelector(".switch-program");
+    if (switchBtn) switchBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      requestUnlock();
+    });
+    const activateBtn = panel.querySelector(".activate-day");
+    if (activateBtn) activateBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      claimDay(panel);
+    });
   });
 
   const pop = document.createElement("div");
@@ -399,8 +770,17 @@ a.trainer-portfolio.info{text-decoration:none}
       const rec = days[note.dataset.day];
       note.value = rec && rec.v ? rec.v : "";
     });
-    if (msg.place) applyPlace(msg.place.week, msg.place.day, false);
+    const incoming = preferActive(normalizeActive(msg.data.active), readLocalActive());
+    active = incoming;
+    const advanced = maybeAutoAdvance();
+    writeLocalActive();
+    applyMode();
+    const fromActive = placeFromActive();
+    if (fromActive) applyPlace(fromActive.week, fromActive.day, advanced || !!active);
+    else if (msg.place) applyPlace(msg.place.week, msg.place.day, false);
   });
+  active = readLocalActive();
+  applyMode();
   tell({ type: "memtofit-ready" });
 
   const dayButtons = bonusTab ? dayTabs.concat(bonusTab) : dayTabs;

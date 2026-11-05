@@ -51,6 +51,20 @@ class PublisherTests(unittest.TestCase):
         self.assertNotIn('v2.1', page)
         self.assertNotIn('{{', page)
 
+    def test_day_head_active_on_shell(self):
+        page, _ = b.render(plan(), "", "Test", "test-slot", "2026-10-13")
+        self.assertEqual(page.count('class="day-head"'), 6)
+        self.assertEqual(page.count('class="day-head-slot"'), 6)
+        self.assertEqual(page.count('class="active-on"'), 6)
+        self.assertEqual(page.count('class="switch-program"'), 6)
+        self.assertEqual(page.count('class="activate-day"'), 6)
+        self.assertIn("Active on", page)
+        self.assertIn("Switch program", page)
+        self.assertIn(">Active</button>", page)
+        self.assertNotIn("active-on-row", page)
+        self.assertNotIn('class="panel bonus-panel"', page)
+        self.assertNotIn('data-bonus', page)
+
     def test_issue_date_requires_calendar_date_without_time(self):
         for value in (None, "", "20261013", "2026-02-30", "2026-10-13T12:00:00Z"):
             with self.subTest(value=value), self.assertRaises(ValueError):

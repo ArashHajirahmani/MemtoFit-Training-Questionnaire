@@ -1039,10 +1039,23 @@ def render(plan, notes, person, slot, issued_on):
                 f'<textarea class="day-note" data-day="{w_index}-{d_index}" '
                 f'placeholder="Note for this day"></textarea></label>'
             )
+            active_shell = (
+                '<div class="day-head-side"><div class="day-head-slot">'
+                '<div class="active-on" hidden>'
+                '<span class="active-on-label">Active on</span>'
+                '<time class="active-on-date"></time>'
+                '<button type="button" class="active-on-clear" aria-label="Clear active day">×</button>'
+                "</div>"
+                '<button type="button" class="switch-program" hidden>Switch program</button>'
+                '<button type="button" class="activate-day" hidden>Active</button>'
+                "</div></div>"
+            )
             parts.append(
                 f'<section class="panel" data-panel="{w_index}-{d_index}" role="tabpanel" '
                 f'aria-labelledby="day-tab-{d_index + 1}"{section_hidden}>'
+                f'<div class="day-head"><div class="day-head-main">'
                 f'<p class="eyebrow">{eyebrow}</p>{h2}'
+                f"</div>{active_shell}</div>"
                 f'<p class="focus">{focus_text(day["focus"])}</p>'
                 f'<div class="table-wrap"><table><thead><tr>'
                 f"<th>Exercise</th><th>Sets &amp; reps</th></tr></thead><tbody>\n"

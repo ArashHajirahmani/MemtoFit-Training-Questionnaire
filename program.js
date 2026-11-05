@@ -5,7 +5,7 @@
   var frame = document.getElementById("plan-frame");
   var planStatus = document.getElementById("plan-status");
   var session = null;
-  var state = { unit: "lb", loads: {}, days: {} };
+  var state = { unit: "lb", loads: {}, days: {}, active: null };
 
   function logKey(id) {
     return "memtofit-log-" + id;
@@ -219,8 +219,24 @@
     return "";
   }
 
+  function asActive(raw) {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+    if (raw.idle) return { idle: true };
+    var panel = String(raw.panel || "");
+    if (!/^\d+-\d+$/.test(panel)) return null;
+    var pending = !!raw.pending;
+    var at = raw.at ? String(raw.at) : null;
+    if (!pending && !at) return null;
+    return { panel: panel, at: pending ? null : at, pending: pending };
+  }
+
   function snapshot() {
-    return JSON.parse(JSON.stringify({ unit: state.unit, loads: state.loads, days: state.days }));
+    return JSON.parse(JSON.stringify({
+      unit: state.unit,
+      loads: state.loads,
+      days: state.days,
+      active: state.active
+    }));
   }
 
   function same(a, b) {
@@ -273,6 +289,11 @@
     persist();
   }
 
+  function putActive(raw) {
+    state.active = asActive(raw);
+    persist();
+  }
+
   function sendHydrate() {
     var win = frame.contentWindow;
     if (!win) return;
@@ -290,6 +311,7 @@
     }
     if (msg.type === "memtofit-save-load") putLoad(msg.key, String(msg.value || "").trim(), msg.kind, msg.unit);
     if (msg.type === "memtofit-save-day") put(state.days, msg.key, String(msg.value || "").trim());
+    if (msg.type === "memtofit-save-active") putActive(msg.active);
   }
 
   function preparePlan(html) {
@@ -340,13 +362,25 @@
       var local = asObject(readLocal(session.id)) || {};
       var loads = mergeLoadMaps(server.loads, local.loads);
       var days = mergeMaps(server.days, local.days);
+      var serverActive = asActive(server.active);
+      var localActive = asActive(local.active);
+      var active = serverActive;
+      if (localActive) {
+        if (!serverActive) active = localActive;
+        else if (!!localActive.idle !== !!serverActive.idle) active = localActive.idle ? localActive : serverActive;
+        else if (localActive.idle && serverActive.idle) active = localActive;
+        else if (!!localActive.pending !== !!serverActive.pending) active = localActive.pending ? localActive : serverActive;
+        else if ((localActive.at || "") >= (serverActive.at || "")) active = localActive;
+        else active = serverActive;
+      }
       state = {
         unit: unitFromAnswers(row.answers) || (server.unit === "kg" ? "kg" : "lb"),
         loads: loads,
-        days: days
+        days: days,
+        active: active
       };
       writeLocal();
-      if (!same(server.loads || {}, loads) || !same(server.days || {}, days)) persist();
+      if (!same(server.loads || {}, loads) || !same(server.days || {}, days) || !same(server.active || null, active)) persist();
       return memtofitCrypto.decryptPlan(session.name, row.plan).then(function (html) {
         app.hidden = false;
         showPlan(html);
