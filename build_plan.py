@@ -1043,8 +1043,10 @@ def render(plan, notes, person, slot, issued_on):
                 '<div class="day-head-side"><div class="day-head-slot">'
                 '<div class="active-on" hidden>'
                 '<span class="active-on-label">Active on</span>'
-                '<time class="active-on-date"></time>'
+                '<div class="active-on-value">'
                 '<button type="button" class="active-on-clear" aria-label="Clear active day">×</button>'
+                '<time class="active-on-date"></time>'
+                '</div>'
                 "</div>"
                 '<button type="button" class="switch-program" hidden>Switch program</button>'
                 '<button type="button" class="activate-day" hidden>Active</button>'

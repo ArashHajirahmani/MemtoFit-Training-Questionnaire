@@ -84,6 +84,9 @@ a.trainer-portfolio.info{text-decoration:none}
 }
 @media(prefers-reduced-motion:reduce){.celebrate,.celebrate-piece{display:none!important;animation:none!important}}
 @media(max-width:420px){.day-head{gap:8px}.switch-program,.activate-day{padding:5px 8px;font-size:11px}.day-head-slot{min-width:4.8rem}}
+.panel.on-history .prescription{grid-template-columns:minmax(0,1fr)}
+.active-on-value{display:flex;align-items:center;justify-content:center;gap:5px}
+.active-on-clear{width:18px;height:18px;margin:0;border:1.5px solid currentColor;border-radius:50%;background:#fff;color:#b42318;font-size:15px}
 </style>
 </head>
 <body data-storage-key="{{STORAGE_KEY}}">
@@ -473,6 +476,7 @@ a.trainer-portfolio.info{text-decoration:none}
     else run();
   }
   const CELEBRATE_COLORS = ["#2C4A27", "#FAAF58", "#F99E34", "#9BBE91", "#547C4B", "#FFF4E6"];
+  const MIN_CELEBRATION_GAP_MS = 29 * 60 * 1000;
   let celebrateLayer = null;
   let celebrateTimer = 0;
   function prefersReducedMotion() {
@@ -484,9 +488,32 @@ a.trainer-portfolio.info{text-decoration:none}
     if (!boxes.length) return false;
     return [...boxes].every((box) => box.checked);
   }
+  function celebrationStorageKey() {
+    return storageKey + "-celebrated";
+  }
+  function panelCompletionGap(panel) {
+    const id = panelId(panel);
+    const prefix = id + "-";
+    const times = Object.keys(saved).filter((key) => key === id || key.indexOf(prefix) === 0)
+      .map((key) => saved[key] && saved[key].at)
+      .map((value) => new Date(value).getTime())
+      .filter((value) => Number.isFinite(value));
+    if (times.length < 2) return 0;
+    return Math.max(...times) - Math.min(...times);
+  }
+  function celebratedToday() {
+    try { return localStorage.getItem(celebrationStorageKey()) === todayKey(); }
+    catch (err) { return false; }
+  }
+  function rememberCelebration() {
+    try { localStorage.setItem(celebrationStorageKey(), todayKey()); }
+    catch (err) {}
+  }
   function celebrateSession(panel) {
     if (!panel || panel.classList.contains("bonus-panel") || panel.classList.contains("on-history")) return;
     if (prefersReducedMotion()) return;
+    if (celebratedToday() || panelCompletionGap(panel) < MIN_CELEBRATION_GAP_MS) return;
+    rememberCelebration();
     if (celebrateTimer) {
       clearTimeout(celebrateTimer);
       celebrateTimer = 0;
@@ -599,7 +626,7 @@ a.trainer-portfolio.info{text-decoration:none}
         if (check.checked) {
           const now = new Date();
           const stamp = String(now.getHours()).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0");
-          saved[key] = { done: true, time: stamp };
+          saved[key] = { done: true, time: stamp, at: now.toISOString() };
           time.textContent = stamp;
           time.hidden = false;
           showLog();
@@ -715,6 +742,24 @@ a.trainer-portfolio.info{text-decoration:none}
       return raw.replace(/[^0-9:.\sminsec]/g, "").replace(/\s+/g, " ").slice(0, 12);
     }
     return numeric(raw);
+  }
+  function blurTextInput() {
+    const focused = document.activeElement;
+    if (focused && focused.matches && focused.matches(".load, .day-note")) focused.blur();
+  }
+  let keyboardVisible = false;
+  if (window.visualViewport) {
+    let viewportHeight = window.visualViewport.height;
+    window.visualViewport.addEventListener("resize", () => {
+      const nextHeight = window.visualViewport.height;
+      const focused = document.activeElement;
+      if (focused && focused.matches && focused.matches(".load, .day-note") && nextHeight < viewportHeight) keyboardVisible = true;
+      if (keyboardVisible && nextHeight > viewportHeight) {
+        blurTextInput();
+        keyboardVisible = false;
+      }
+      viewportHeight = nextHeight;
+    });
   }
   function unitText(input) {
     if (input.dataset.kind === "time") return input.dataset.unit === "min" ? "min" : "sec";
