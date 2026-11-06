@@ -65,6 +65,12 @@
         p_token: session.token,
         p_followup: followup
       });
+    },
+    resetPlanProgress: function (session) {
+      return rpc("reset_plan_progress", {
+        p_id: session.id,
+        p_token: session.token
+      });
     }
   };
 })();

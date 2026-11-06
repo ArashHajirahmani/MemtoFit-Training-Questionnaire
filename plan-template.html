@@ -805,17 +805,28 @@ a.trainer-portfolio.info{text-decoration:none}
       return;
     }
     if (msg.type !== "memtofit-hydrate" || !msg.data) return;
+    if (msg.clearSession) {
+      saved = {};
+      persistChecks();
+      try { localStorage.removeItem(activeStorageKey()); } catch (err) {}
+      try { localStorage.removeItem(celebrationStorageKey()); } catch (err) {}
+      panels.forEach((panel) => clearSessionChecks(panel));
+      active = null;
+      writeLocalActive();
+    }
     applyUnit(msg.data.unit);
     const loads = msg.data.loads || {};
     document.querySelectorAll(".load").forEach((input) => {
       applyLoad(input, loads[input.dataset.key]);
     });
-    const days = msg.data.days || {};
+    const days = msg.clearSession ? {} : (msg.data.days || {});
     document.querySelectorAll(".day-note").forEach((note) => {
       const rec = days[note.dataset.day];
       note.value = rec && rec.v ? rec.v : "";
     });
-    const incoming = preferActive(normalizeActive(msg.data.active), readLocalActive());
+    const incoming = msg.clearSession
+      ? normalizeActive(msg.data.active)
+      : preferActive(normalizeActive(msg.data.active), readLocalActive());
     active = incoming;
     const advanced = maybeAutoAdvance();
     writeLocalActive();

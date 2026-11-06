@@ -48,6 +48,7 @@ class PublisherTests(unittest.TestCase):
     def test_footer_preserves_recorded_issue_date(self):
         page, _ = b.render(plan(), "", "Test", "test-slot", "2026-10-13")
         self.assertIn('Issued on <time datetime="2026-10-13">Oct 13, 2026</time>', page)
+        self.assertIn('data-storage-key="memtofit-done-test-slot-2026-10-13"', page)
         self.assertNotIn('v2.1', page)
         self.assertNotIn('{{', page)
 

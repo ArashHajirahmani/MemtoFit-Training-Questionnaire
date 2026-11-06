@@ -5,7 +5,8 @@
   var frame = document.getElementById("plan-frame");
   var planStatus = document.getElementById("plan-status");
   var session = null;
-  var state = { unit: "lb", loads: {}, days: {}, active: null };
+  var state = { unit: "lb", loads: {}, days: {}, active: null, progress_rev: "" };
+  var clearSession = false;
 
   function logKey(id) {
     return "memtofit-log-" + id;
@@ -230,12 +231,17 @@
     return { panel: panel, at: pending ? null : at, pending: pending };
   }
 
+  function progressRev(raw) {
+    return String(raw || "").trim();
+  }
+
   function snapshot() {
     return JSON.parse(JSON.stringify({
       unit: state.unit,
       loads: state.loads,
       days: state.days,
-      active: state.active
+      active: state.active,
+      progress_rev: state.progress_rev || ""
     }));
   }
 
@@ -299,7 +305,13 @@
     if (!win) return;
     var data = snapshot();
     data.loads = presentLoads(data.loads);
-    win.postMessage({ type: "memtofit-hydrate", data: data, place: readPlace() }, "*");
+    win.postMessage({
+      type: "memtofit-hydrate",
+      data: data,
+      place: readPlace(),
+      clearSession: clearSession
+    }, "*");
+    clearSession = false;
   }
 
   function onMessage(e) {
@@ -360,12 +372,16 @@
       }
       var server = asObject(row.log) || {};
       var local = asObject(readLocal(session.id)) || {};
+      var serverRev = progressRev(server.progress_rev);
+      var localRev = progressRev(local.progress_rev);
+      var freshProgress = !!serverRev && serverRev !== localRev;
+      clearSession = freshProgress;
       var loads = mergeLoadMaps(server.loads, local.loads);
-      var days = mergeMaps(server.days, local.days);
+      var days = freshProgress ? asObject(server.days) || {} : mergeMaps(server.days, local.days);
       var serverActive = asActive(server.active);
       var localActive = asActive(local.active);
       var active = serverActive;
-      if (localActive) {
+      if (!freshProgress && localActive) {
         if (!serverActive) active = localActive;
         else if (!!localActive.idle !== !!serverActive.idle) active = localActive.idle ? localActive : serverActive;
         else if (localActive.idle && serverActive.idle) active = localActive;
@@ -373,14 +389,16 @@
         else if ((localActive.at || "") >= (serverActive.at || "")) active = localActive;
         else active = serverActive;
       }
+      if (freshProgress) active = serverActive;
       state = {
         unit: unitFromAnswers(row.answers) || (server.unit === "kg" ? "kg" : "lb"),
         loads: loads,
         days: days,
-        active: active
+        active: active,
+        progress_rev: serverRev || localRev
       };
       writeLocal();
-      if (!same(server.loads || {}, loads) || !same(server.days || {}, days) || !same(server.active || null, active)) persist();
+      if (!same(server.loads || {}, loads) || !same(server.days || {}, days) || !same(server.active || null, active) || progressRev(server.progress_rev) !== state.progress_rev) persist();
       return memtofitCrypto.decryptPlan(session.name, row.plan).then(function (html) {
         app.hidden = false;
         showPlan(html);

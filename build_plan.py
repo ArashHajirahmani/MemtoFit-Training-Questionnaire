@@ -1112,7 +1112,7 @@ def render(plan, notes, person, slot, issued_on):
         "{{START_DATE}}": start_date,
         "{{WEEK_TOTAL}}": total_weeks,
         "{{GOAL}}": html.escape(goal),
-        "{{STORAGE_KEY}}": html.escape(f"memtofit-done-{slot}"),
+        "{{STORAGE_KEY}}": html.escape(f"memtofit-done-{slot}-{issued.isoformat()}"),
         "{{WEEK_BUTTONS}}": "\n    ".join(week_buttons),
         "{{DAY_BUTTONS}}": "\n    ".join(day_buttons),
         "{{PANELS}}": "\n  ".join(panels),
