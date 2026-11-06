@@ -179,6 +179,16 @@
     line-height: 1.45;
   }
   p.hint { margin-top: -0.35rem; }
+  p.last-submit {
+    margin: 0 0 0.7rem;
+    color: var(--muted);
+    font-size: 0.88rem;
+    font-weight: 600;
+    line-height: 1.35;
+    letter-spacing: 0.01em;
+  }
+  p.last-submit[hidden] { display: none; }
+  p.last-submit time { font-weight: 650; color: var(--ink); }
   .card { border: 1.5px solid transparent; border-radius: 0.7rem; }
   .card.invalid { border-color: #b42318; background: #fdf4f3; }
   .card.invalid .req { color: #b42318; }
@@ -318,6 +328,7 @@
 <p class="save-status" id="save-status" hidden></p>
 <main class="wrap">
 
+<p class="last-submit" id="last-submit" hidden>Last submitted <time datetime=""></time></p>
 <h2>Part 1 - About you</h2>
 <p class="lead">Questions marked * are required. Skip anything else you're unsure about.</p>
 
@@ -579,7 +590,7 @@
 
 <p class="note">Your answers are used only to build a training program that fits you. This is not a medical assessment. Feedback is welcome.</p>
 </main>
-<footer class="site-foot"><p>v2.1 · © 2026 memtoria.com</p></footer>
+<footer class="site-foot"><p id="site-foot-copy">© 2026 memtoria.com</p></footer>
 <dialog id="saved-dialog">
   <h2>Your answers are saved!</h2>
   <p>Contact your trainer to get your new training plan.</p>
@@ -639,7 +650,7 @@
 <script src="gate.js?v=5"></script>
 <script src="slot.js?v=5"></script>
 <script src="form.js?v=8"></script>
-<script src="share.js?v=12"></script>
+<script src="share.js?v=13"></script>
 <script>
 (function () {
   function addOption(select, value, tod) {
@@ -729,6 +740,9 @@ memtofitGate.start().then(function (session) {
   return pending.then(function (row) {
     session.row = row;
     if (row && row.answers && window.memtofitFill) window.memtofitFill(row.answers);
+    if (window.memtofitShowSubmitDate) {
+      window.memtofitShowSubmitDate(row && row.answers_submitted_at);
+    }
   }, function () {});
 });
 </script>

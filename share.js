@@ -130,6 +130,48 @@
 
   var saving = false;
 
+  function formatSubmitDate(raw) {
+    var value = String(raw || "").trim();
+    if (!value) return null;
+    var when = new Date(value);
+    if (isNaN(when.getTime())) return null;
+    var months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    var iso = when.getFullYear() + "-" +
+      String(when.getMonth() + 1).padStart(2, "0") + "-" +
+      String(when.getDate()).padStart(2, "0");
+    return {
+      iso: iso,
+      label: months[when.getMonth()] + " " + when.getDate() + ", " + when.getFullYear()
+    };
+  }
+
+  function showSubmitDate(raw) {
+    var stamp = formatSubmitDate(raw);
+    var meta = document.getElementById("last-submit");
+    var foot = document.getElementById("site-foot-copy");
+    if (meta) {
+      var time = meta.querySelector("time");
+      if (stamp && time) {
+        time.setAttribute("datetime", stamp.iso);
+        time.textContent = stamp.label;
+        meta.hidden = false;
+      } else {
+        if (time) {
+          time.removeAttribute("datetime");
+          time.textContent = "";
+        }
+        meta.hidden = true;
+      }
+    }
+    if (foot) {
+      foot.textContent = stamp
+        ? ("Submitted on " + stamp.label + " · © 2026 memtoria.com")
+        : "© 2026 memtoria.com";
+    }
+  }
+
+  window.memtofitShowSubmitDate = showSubmitDate;
+
   function submitAnswers() {
     if (saving) return;
     if (typeof window.memtofitReady !== "function" || !window.memtofitReady()) return;
@@ -167,6 +209,9 @@
     saving = true;
     if (btn) btn.disabled = true;
     window.memtofitSlot.saveAnswers(session, window.memtofitGate.name(), text).then(function () {
+      var now = new Date().toISOString();
+      if (session.row) session.row.answers_submitted_at = now;
+      showSubmitDate(now);
       mark(true);
       done();
     }, function () {
