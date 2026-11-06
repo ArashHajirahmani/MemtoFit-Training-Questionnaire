@@ -62,9 +62,9 @@
 
     var m = document.querySelectorAll('input[name="muscle"]:checked').length;
     var mCard = document.querySelector('[data-req="muscles"]');
-    if (m > 3) {
+    if (m > 2) {
       ok = false;
-      setErr(mCard, "Pick up to 3.");
+      setErr(mCard, "Pick up to 2.");
       if (!first) first = mCard;
     } else {
       setErr(mCard, "");
