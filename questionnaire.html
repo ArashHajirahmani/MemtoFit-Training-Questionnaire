@@ -716,6 +716,55 @@
   for (var r = 0; r < radios.length; r++) radios[r].addEventListener("change", syncClock);
   syncClock();
 
+  function scrollNotesPromptToTop(el) {
+    if (!el || el.tagName !== "TEXTAREA") return;
+    var text = String(el.value || "");
+    var needle = "add your new comments below";
+    var at = text.toLowerCase().indexOf(needle);
+    if (at < 0) return;
+    var lineStart = text.lastIndexOf("\n", at);
+    lineStart = lineStart < 0 ? 0 : lineStart + 1;
+    if (!/\n$/.test(text)) el.value = text + "\n";
+    text = el.value;
+    var lineEnd = text.indexOf("\n", lineStart);
+    if (lineEnd < 0) lineEnd = text.length;
+    var mirror = document.createElement("div");
+    var style = window.getComputedStyle(el);
+    mirror.style.cssText = [
+      "position:absolute",
+      "visibility:hidden",
+      "pointer-events:none",
+      "white-space:pre-wrap",
+      "word-wrap:break-word",
+      "overflow-wrap:break-word",
+      "top:0",
+      "left:-9999px",
+      "width:" + el.clientWidth + "px",
+      "font:" + style.font,
+      "line-height:" + style.lineHeight,
+      "letter-spacing:" + style.letterSpacing,
+      "padding:" + style.padding,
+      "border:" + style.border,
+      "box-sizing:" + style.boxSizing
+    ].join(";");
+    mirror.textContent = text.slice(0, lineStart);
+    document.body.appendChild(mirror);
+    var top = mirror.scrollHeight;
+    document.body.removeChild(mirror);
+    var pad = parseFloat(style.paddingTop) || 0;
+    el.scrollTop = Math.max(0, top - pad);
+    try {
+      el.setSelectionRange(lineEnd + 1, lineEnd + 1);
+    } catch (err) {}
+  }
+
+  function revealNotesPrompts() {
+    requestAnimationFrame(function () {
+      scrollNotesPromptToTop(document.getElementById("limnote"));
+      scrollNotesPromptToTop(document.getElementById("prefs"));
+    });
+  }
+
   var fill = window.memtofitFill;
   if (fill && clock) {
     window.memtofitFill = function (markdown) {
@@ -724,6 +773,12 @@
       clock.disabled = false;
       fill(markdown);
       syncClock();
+      revealNotesPrompts();
+    };
+  } else if (fill) {
+    window.memtofitFill = function (markdown) {
+      fill(markdown);
+      revealNotesPrompts();
     };
   }
 })();
