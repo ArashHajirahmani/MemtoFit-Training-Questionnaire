@@ -1026,14 +1026,16 @@ def render(plan, notes, person, slot, issued_on):
     goal = plan["goal"].replace("•", "·")
 
     h1 = html.escape(f"{nice}{apos}s Gym") + info_button(title_note, "About this program", on_dark=True)
+    # Single-week plans omit the Week Ⅰ/Ⅱ tab row entirely (days-only sticky nav).
     week_buttons = []
-    for index, week in enumerate(weeks):
-        selected = "true" if index == 0 else "false"
-        week_buttons.append(
-            f'<button type="button" role="tab" id="week-tab-{index + 1}" '
-            f'aria-controls="week-panel-{index + 1}" aria-selected="{selected}" '
-            f'data-week="{index}">Week {week["n"]}</button>'
-        )
+    if len(weeks) >= 2:
+        for index, week in enumerate(weeks):
+            selected = "true" if index == 0 else "false"
+            week_buttons.append(
+                f'<button type="button" role="tab" id="week-tab-{index + 1}" '
+                f'aria-controls="week-panel-{index + 1}" aria-selected="{selected}" '
+                f'data-week="{index}">Week {week["n"]}</button>'
+            )
     day_buttons = []
     for index, day in enumerate(weeks[0]["days"]):
         selected = "true" if index == 0 else "false"
@@ -1157,6 +1159,7 @@ def render(plan, notes, person, slot, issued_on):
         "{{GOAL}}": html.escape(goal),
         "{{STORAGE_KEY}}": html.escape(f"memtofit-done-{slot}-{issued.isoformat()}"),
         "{{WEEK_BUTTONS}}": "\n    ".join(week_buttons),
+        "{{WEEKS_HIDDEN}}": "" if len(weeks) >= 2 else " hidden",
         "{{DAY_BUTTONS}}": "\n    ".join(day_buttons),
         "{{PANELS}}": "\n  ".join(panels),
     }
