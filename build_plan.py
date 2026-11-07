@@ -393,11 +393,29 @@ def score_kind(sets):
     return "load", "lb"
 
 
+def sets_html(sets):
+    if isinstance(sets, (list, tuple)):
+        lines = [fmt_sets(part) for part in sets if str(part or "").strip()]
+    else:
+        text = fmt_sets(sets)
+        lines = [text] if text else []
+    if not lines:
+        return ""
+    if len(lines) == 1:
+        return html.escape(lines[0])
+    return (
+        '<span class="set-stack">'
+        + "".join(f'<span class="set-line">{html.escape(line)}</span>' for line in lines)
+        + "</span>"
+    )
+
+
 def row_html(groups, join_word, hints, sets, note, key, group="", track=True):
     exercise, _names = exercise_html(groups, join_word, note, group)
     load = ""
+    sample = " ".join(sets) if isinstance(sets, (list, tuple)) else sets
     if track:
-        kind, unit = score_kind(sets)
+        kind, unit = score_kind(sample)
         placeholder = {"min": "min", "sec": "sec"}.get(unit, "lb")
         label = "Time" if kind == "time" else "Weight"
         mode = "text" if kind == "time" else "decimal"
@@ -409,7 +427,7 @@ def row_html(groups, join_word, hints, sets, note, key, group="", track=True):
         )
     return (
         f"<tr><th>{exercise}{hint_html(hints)}</th>"
-        f'<td class="sets">{html.escape(sets)}{load}</td></tr>'
+        f'<td class="sets">{sets_html(sets)}{load}</td></tr>'
     )
 
 
@@ -865,6 +883,31 @@ def superset_self_test():
     plain = exercise_html([["Rope Pushdown"], ["Straight-Bar Pushdown"]], "OR", "")[0]
     if 'class="join">(</b>' in plain:
         errors.append("a plain OR was wrapped in parentheses")
+    stacked = row_html(
+        [["Flat DB Press"], ["Incline Bench Rear Delt Raise"]],
+        "AND",
+        ["Superset · do both"],
+        ["3 x 8-12 (2 loads)", "3 x 15-20"],
+        "",
+        "flat+rear",
+        track=False,
+    )
+    sets_cell = stacked.split('<td class="sets">', 1)[-1].split("</td>", 1)[0]
+    if 'class="set-stack"' not in sets_cell or sets_cell.count('class="set-line"') != 2:
+        errors.append("different AND/OR set lines must stack instead of joining with a middle dot")
+    if " · " in sets_cell or "3 × 8–12 (2 loads) · 3 × 15–20" in stacked:
+        errors.append("stacked AND/OR sets must not use a middle-dot join")
+    same = row_html(
+        [["Rope Pushdown"], ["Cable Curl"]],
+        "AND",
+        [],
+        "3 x 10-15 each",
+        "",
+        "push+curl",
+        track=False,
+    )
+    if 'class="set-stack"' in same or "3 × 10–15 each" not in same:
+        errors.append("equal AND/OR sets should stay one short each-line")
     return errors
 
 
@@ -873,7 +916,7 @@ def pair_sets(left, right):
         raise SystemExit(f"Superset set counts must be equal ({left} vs {right}).")
     if left == right:
         return f"{left} each"
-    return f"{left} · {right}"
+    return [left, right]
 
 
 def render_rows(day_no, rows, tables):
