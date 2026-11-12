@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#2C4A27">
 <title>{{TITLE}}</title>
+<link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="favicon-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png" sizes="180x180">
 <meta name="description" content="{{DESCRIPTION}}">
 <style>
 :root{--green:#2C4A27;--deep:#181F17;--amber:#FAAF58;--orange:#F99E34;--paper:#F7F6F1;--ink:#20251E;--muted:#667061;--line:#E5E7DF;--safe:env(safe-area-inset-bottom,0px)}
@@ -747,24 +750,7 @@ a.trainer-portfolio.info{text-decoration:none}
     }
     return numeric(raw);
   }
-  function blurTextInput() {
-    const focused = document.activeElement;
-    if (focused && focused.matches && focused.matches(".load, .day-note")) focused.blur();
-  }
-  let keyboardVisible = false;
-  if (window.visualViewport) {
-    let viewportHeight = window.visualViewport.height;
-    window.visualViewport.addEventListener("resize", () => {
-      const nextHeight = window.visualViewport.height;
-      const focused = document.activeElement;
-      if (focused && focused.matches && focused.matches(".load, .day-note") && nextHeight < viewportHeight) keyboardVisible = true;
-      if (keyboardVisible && nextHeight > viewportHeight) {
-        blurTextInput();
-        keyboardVisible = false;
-      }
-      viewportHeight = nextHeight;
-    });
-  }
+  // Do not force-blur .day-note / .load when the soft keyboard closes — that flashes the caret.
   function unitText(input) {
     if (input.dataset.kind === "time") return input.dataset.unit === "min" ? "min" : "sec";
     return unitLabel;
