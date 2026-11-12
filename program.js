@@ -71,8 +71,15 @@
     return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
   }
 
+  function aliasLoadKey(key) {
+    // Match build_plan.slug: expand bare "db" segments so DB/Dumbbell spellings share one series.
+    return String(key || "")
+      .replace(/(^|-)db(?=-|$)/g, "$1dumbbell")
+      .replace(/--+/g, "-");
+  }
+
   function canonicalKey(key) {
-    return String(key || "").replace(/^\d+:/, "");
+    return aliasLoadKey(String(key || "").replace(/^\d+:/, ""));
   }
 
   function entryScore(text, unit) {

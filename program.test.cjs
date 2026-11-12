@@ -59,5 +59,19 @@ async function landing(plan, today) {
   handle({source: {}, data: {type: 'memtofit-hydrate', data: {days: {}}}});
   assert.equal(notes[1].value, 'My existing feedback', 'ignore messages from other sources');
 
-  console.log('Entry-page policy and empty-note hydration checks passed');
+  // Load-key alias: DB ↔ Dumbbell spellings must fold to one series (matches build_plan.slug).
+  const programSrc = read('program.js');
+  const loadFns = vm.runInNewContext(
+    programSrc.match(/function aliasLoadKey\(key\) \{[\s\S]*?\n  \}/)[0] + '\n' +
+    programSrc.match(/function canonicalKey\(key\) \{[\s\S]*?\n  \}/)[0] + '\n' +
+    '({ aliasLoadKey, canonicalKey })'
+  );
+  assert.equal(loadFns.aliasLoadKey('db-lateral-raise'), 'dumbbell-lateral-raise');
+  assert.equal(loadFns.aliasLoadKey('dumbbell-lateral-raise'), 'dumbbell-lateral-raise');
+  assert.equal(loadFns.aliasLoadKey('incline-db-press'), 'incline-dumbbell-press');
+  assert.equal(loadFns.canonicalKey('db-lateral-raise'), 'dumbbell-lateral-raise');
+  assert.equal(loadFns.canonicalKey('3:incline-db-press'), 'incline-dumbbell-press');
+  assert.equal(loadFns.canonicalKey('flat-dumbbell-press'), 'flat-dumbbell-press');
+
+  console.log('Entry-page policy, empty-note hydration, and load-key alias checks passed');
 })().catch(error => {console.error(error); process.exitCode = 1;});

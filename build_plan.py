@@ -302,10 +302,16 @@ def link(name):
     return f'<a href="{href}" target="_blank" rel="noopener noreferrer">{html.escape(name)}</a>'
 
 
+def slug_piece(name):
+    """Hyphen key for one exercise; expand DB → Dumbbell so loads survive renames."""
+    expanded = re.sub(r"\bDB\b", "Dumbbell", name, flags=re.I)
+    return re.sub(r"[^a-z0-9]+", "-", expanded.lower()).strip("-")
+
+
 def slug(names):
     parts = []
     for name in names:
-        piece = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
+        piece = slug_piece(name)
         if piece:
             parts.append(piece)
     return "+".join(parts)
@@ -819,6 +825,19 @@ def check_supersets(rows, where, stations=None, whitelist=None, vetoes=None, ban
         index += 1
 
 
+def slug_self_test():
+    errors = []
+    if slug(["DB Lateral Raise"]) != "dumbbell-lateral-raise":
+        errors.append("DB Lateral Raise must slug like Dumbbell Lateral Raise")
+    if slug(["Dumbbell Lateral Raise"]) != slug(["DB Lateral Raise"]):
+        errors.append("DB and Dumbbell spellings must share one load key")
+    if slug(["Incline DB Press"]) != "incline-dumbbell-press":
+        errors.append("Incline DB Press must expand DB inside the slug")
+    if slug(["Flat DB Press", "DB Lateral Raise"]) != "flat-dumbbell-press+dumbbell-lateral-raise":
+        errors.append("OR/joined slugs must expand DB on every name")
+    return errors
+
+
 def superset_self_test():
     stations = load_stations()
     whitelist = load_whitelist()
@@ -1186,9 +1205,9 @@ def normalize_name(name):
 
 def main():
     global ACTIVE_SUPERSETS
-    failures = superset_self_test()
+    failures = slug_self_test() + superset_self_test()
     if failures:
-        print("superset publisher checks failed:\n  " + "\n  ".join(failures), file=sys.stderr)
+        print("publisher checks failed:\n  " + "\n  ".join(failures), file=sys.stderr)
         return 1
     parser = argparse.ArgumentParser(description="Build a MemtoFit program page from the gym and notes files.")
     parser.add_argument("gym", type=Path)
