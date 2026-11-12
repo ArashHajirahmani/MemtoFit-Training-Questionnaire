@@ -873,6 +873,8 @@ def superset_self_test():
     expect_ok(pair("Rope Pushdown", "Cable Curl"))
     expect_ok(pair("Rope Pushdown OR Straight-Bar Pushdown", "Rope Hammer Curl"))
     expect_fail(pair("Face Pull", "Cable Curl"), "whitelist")
+    expect_ok(pair("Incline DB Press", "Incline Bench Rear Delt Raise"))
+    expect_fail(pair("Flat DB Press", "Incline Bench Rear Delt Raise"), "whitelist")
     expect_fail(pair("Chest Supported Row", "Iso-Lateral Row"), "one station")
     expect_fail(pair("Rope Pushdown OR Seated Dip Machine", "Cable Curl"), "one station")
     expect_fail(
@@ -1203,6 +1205,20 @@ def normalize_name(name):
     return re.sub(r"\s+", "", name.strip().lower())
 
 
+def station_flow_errors(gym_text):
+    """Planner station-flow audit; surgical edits and rebuilds skip ordering, so the publisher re-checks."""
+    if str(PLANNER) not in sys.path:
+        sys.path.insert(0, str(PLANNER))
+    import check_blocks
+
+    library = check_blocks.catalog()
+    return [
+        problem
+        for day, slots in check_blocks.parse_days(gym_text)
+        for problem in check_blocks.flow_problems(day, slots, library)
+    ]
+
+
 def main():
     global ACTIVE_SUPERSETS
     failures = slug_self_test() + superset_self_test()
@@ -1227,8 +1243,13 @@ def main():
     learned = learned_path.read_text(encoding="utf-8") if learned_path.is_file() else ""
     ban_two_machine, vetoes = learned_superset_vetoes(learned, stations)
     ACTIVE_SUPERSETS = (stations, load_whitelist(), vetoes, ban_two_machine)
+    gym_text = args.gym.read_text()
+    flow = station_flow_errors(gym_text)
+    if flow:
+        print("station flow failed:\n  " + "\n  ".join(flow), file=sys.stderr)
+        return 1
     page, missing = render(
-        parse_gym(args.gym.read_text()),
+        parse_gym(gym_text),
         notes.read_text(),
         args.name.strip(),
         args.slot.strip(),
