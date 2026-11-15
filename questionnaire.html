@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>MemtoFit · Training Profile Questionnaire</title>
+<link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="favicon-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png" sizes="180x180">
 <meta name="description" content="Fill in what you know. We'll build a gym plan that actually fits you.">
 <link rel="canonical" href="https://memtofit.memtoria.com/">
 <meta property="og:type" content="website">
@@ -11,8 +14,8 @@
 <meta property="og:url" content="https://memtofit.memtoria.com/">
 <meta property="og:title" content="MemtoFit · Training Profile Questionnaire">
 <meta property="og:description" content="Fill in what you know. We'll build a gym plan that actually fits you.">
-<meta property="og:image" content="https://memtofit.memtoria.com/og-image.jpg?v=2">
-<meta property="og:image:secure_url" content="https://memtofit.memtoria.com/og-image.jpg?v=2">
+<meta property="og:image" content="https://memtofit.memtoria.com/questionnaire-og.jpg?v=2">
+<meta property="og:image:secure_url" content="https://memtofit.memtoria.com/questionnaire-og.jpg?v=2">
 <meta property="og:image:type" content="image/jpeg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -20,7 +23,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="MemtoFit · Training Profile Questionnaire">
 <meta name="twitter:description" content="Fill in what you know. We'll build a gym plan that actually fits you.">
-<meta name="twitter:image" content="https://memtofit.memtoria.com/og-image.jpg?v=2">
+<meta name="twitter:image" content="https://memtofit.memtoria.com/questionnaire-og.jpg?v=2">
 <style>
   :root {
     --raft-bg: #2C4A27;
@@ -179,6 +182,16 @@
     line-height: 1.45;
   }
   p.hint { margin-top: -0.35rem; }
+  p.last-submit {
+    margin: 0 0 0.7rem;
+    color: var(--muted);
+    font-size: 0.88rem;
+    font-weight: 600;
+    line-height: 1.35;
+    letter-spacing: 0.01em;
+  }
+  p.last-submit[hidden] { display: none; }
+  p.last-submit time { font-weight: 650; color: var(--ink); }
   .card { border: 1.5px solid transparent; border-radius: 0.7rem; }
   .card.invalid { border-color: #b42318; background: #fdf4f3; }
   .card.invalid .req { color: #b42318; }
@@ -210,6 +223,75 @@
     font-size: 0.82rem;
     font-weight: 650;
     color: var(--muted);
+  }
+  .field-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.55rem;
+    margin: 0.55rem 0 0.2rem;
+  }
+  .field-row label.field {
+    margin: 0;
+    flex: 1;
+    min-width: 0;
+  }
+  .archive-open {
+    flex: none;
+    width: 2.4rem;
+    min-width: 2.4rem;
+    min-height: 2.4rem;
+    padding: 0;
+    border: 1.5px solid var(--line);
+    border-radius: 999px;
+    background: #fffdf8;
+    color: var(--muted);
+    font: 1.05rem/1 system-ui, sans-serif;
+    cursor: pointer;
+  }
+  .archive-open[hidden] { display: none; }
+  #archive-dialog {
+    width: min(26rem, calc(100vw - 1.2rem));
+    max-height: calc(100vh - 1.2rem);
+    margin: auto;
+    padding: 1rem 0.95rem 0.95rem;
+    border: 0;
+    border-radius: 0.8rem;
+    background: #f7f4ee;
+    color: var(--ink);
+  }
+  #archive-dialog::backdrop { background: rgba(24, 31, 23, 0.45); }
+  #archive-dialog h2 {
+    margin: 0 0 0.55rem;
+    padding: 0;
+    background: none;
+    color: var(--ink);
+    font-size: 1.05rem;
+    border-radius: 0;
+  }
+  #archive-dialog-body {
+    margin: 0;
+    max-height: min(60vh, 28rem);
+    overflow: auto;
+    padding: 0.75rem 0.8rem;
+    border-radius: 0.55rem;
+    background: #fffdf8;
+    border: 1.5px solid var(--line);
+    white-space: pre-wrap;
+    font-size: 0.92rem;
+    line-height: 1.45;
+    color: var(--ink);
+  }
+  #archive-dialog-close {
+    width: 100%;
+    min-height: var(--tap);
+    margin-top: 0.8rem;
+    border: 0;
+    border-radius: 0.7rem;
+    background: var(--raft-bg);
+    color: var(--raft-fg);
+    font: 600 0.95rem/1 system-ui, sans-serif;
+    cursor: pointer;
   }
   input[type="text"], input[type="number"], input[type="date"], textarea, select {
     width: 100%;
@@ -288,6 +370,230 @@
     text-align: center;
   }
   .note + .note { margin-top: 0.35rem; }
+  .photo-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.65rem;
+    margin-top: 0.75rem;
+  }
+  .photo-tile {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-height: 10.5rem;
+    padding: 0.55rem 0.55rem 0.65rem;
+    border: 1.5px dashed #b8c4b4;
+    border-radius: 0.7rem;
+    background: #fffdf8;
+    cursor: pointer;
+    text-align: left;
+    color: inherit;
+  }
+  .photo-tile.filled {
+    border-style: solid;
+    border-color: var(--line);
+  }
+  .photo-media {
+    position: relative;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 5.8rem;
+    border-radius: 0.45rem;
+    overflow: hidden;
+    background: #eef3ea;
+    color: #6b7a68;
+  }
+  .photo-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .photo-sil {
+    width: 3.4rem;
+    height: 4.4rem;
+    display: block;
+  }
+  .photo-sil svg,
+  .photo-sil img { width: 100%; height: 100%; display: block; object-fit: contain; }
+  .photo-copy { margin-top: 0.45rem; }
+  .photo-copy strong {
+    display: block;
+    font-size: 0.88rem;
+    line-height: 1.25;
+  }
+  .photo-copy span {
+    display: block;
+    margin-top: 0.15rem;
+    font-size: 0.78rem;
+    color: var(--muted);
+    line-height: 1.3;
+  }
+  .photo-actions {
+    position: absolute;
+    top: 0.7rem;
+    right: 0.7rem;
+    display: flex;
+    gap: 0.25rem;
+  }
+  .photo-act {
+    width: 2rem;
+    height: 2rem;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(24, 31, 23, 0.72);
+    color: #F2F2F2;
+    font-size: 0.85rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+  #photo-status {
+    margin: 0.55rem 0 0;
+    font-size: 0.88rem;
+    color: var(--ok);
+  }
+  #photo-status.bad { color: #b42318; }
+  #photo-edit-dialog,
+  #photo-preview-dialog {
+    width: min(26rem, calc(100vw - 1.2rem));
+    max-height: calc(100vh - 1.2rem);
+    margin: auto;
+    padding: 0.9rem 0.85rem 0.95rem;
+    border: 0;
+    border-radius: 0.8rem;
+    background: #f7f4ee;
+    color: var(--ink);
+  }
+  #photo-edit-dialog::backdrop,
+  #photo-preview-dialog::backdrop { background: rgba(24, 31, 23, 0.5); }
+  #photo-edit-dialog h2,
+  #photo-preview-dialog h2 {
+    margin: 0 0 0.45rem;
+    padding: 0;
+    background: none;
+    color: var(--ink);
+    font-size: 1.05rem;
+    border-radius: 0;
+  }
+  #photo-edit-help {
+    margin: 0 0 0.55rem;
+    color: var(--muted);
+    font-size: 0.88rem;
+    line-height: 1.35;
+  }
+  #photo-edit-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.7rem;
+    min-height: 12rem;
+    margin: 0 0 0.7rem;
+    padding: 1rem;
+    border: 1.5px dashed #b8c4b4;
+    border-radius: 0.7rem;
+    background: #fffdf8;
+    text-align: center;
+  }
+  #photo-edit-empty[hidden],
+  #photo-edit-stage[hidden],
+  #photo-edit-tools[hidden] { display: none; }
+  #photo-edit-empty p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+    line-height: 1.4;
+  }
+  #photo-edit-choose {
+    min-height: var(--tap);
+    padding: 0 1.1rem;
+    border: 0;
+    border-radius: 0.7rem;
+    background: var(--raft-bg);
+    color: var(--raft-fg);
+    font: 600 0.95rem/1 system-ui, sans-serif;
+    cursor: pointer;
+  }
+  #photo-edit-canvas-wrap {
+    display: flex;
+    justify-content: center;
+    margin: 0 0 0.7rem;
+    background: #181F17;
+    border-radius: 0.55rem;
+    overflow: hidden;
+  }
+  #photo-edit-canvas {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    touch-action: none;
+  }
+  .photo-tools {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    margin: 0 0 0.7rem;
+  }
+  .photo-tool {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
+    min-height: var(--tap);
+    padding: 0.55rem 0.4rem;
+    border: 1.5px solid var(--line);
+    border-radius: 0.7rem;
+    background: #fffdf8;
+    color: var(--ink);
+    font: 650 0.88rem/1 system-ui, sans-serif;
+    cursor: pointer;
+  }
+  .photo-tool.on {
+    border-color: var(--raft-bg);
+    background: #eef3ea;
+  }
+  .photo-tool svg {
+    width: 1.35rem;
+    height: 1.35rem;
+    display: block;
+  }
+  .photo-edit-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+  .photo-edit-actions button {
+    min-height: var(--tap);
+    border: 0;
+    border-radius: 0.7rem;
+    font: 600 0.95rem/1 system-ui, sans-serif;
+    cursor: pointer;
+  }
+  #photo-edit-discard { background: #e8e3d8; color: var(--ink); }
+  #photo-edit-save { background: var(--raft-accent); color: var(--raft-bg-inv); }
+  #photo-edit-save[aria-disabled="true"] { opacity: 0.45; pointer-events: none; }
+  #photo-preview-img {
+    display: block;
+    width: 100%;
+    max-height: min(70vh, 32rem);
+    object-fit: contain;
+    border-radius: 0.55rem;
+    background: #181F17;
+  }
+  #photo-preview-close {
+    width: 100%;
+    min-height: var(--tap);
+    margin-top: 0.75rem;
+    border: 0;
+    border-radius: 0.7rem;
+    background: var(--raft-bg);
+    color: var(--raft-fg);
+    font: 600 0.95rem/1 system-ui, sans-serif;
+    cursor: pointer;
+  }
   @media (min-width: 640px) {
     .hero h1 { font-size: 1.7rem; }
     .brand { font-size: 1.45rem; }
@@ -301,7 +607,7 @@
     .hero { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     h2, button { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .card { break-inside: avoid; }
-    .btn-add, #saved-dialog { display: none; }
+    .btn-add, #saved-dialog, #archive-dialog, #photo-edit-dialog, #photo-preview-dialog { display: none; }
   }
 </style>
 </head>
@@ -318,6 +624,7 @@
 <p class="save-status" id="save-status" hidden></p>
 <main class="wrap">
 
+<p class="last-submit" id="last-submit" hidden>Last submitted <time datetime=""></time></p>
 <h2>Part 1 - About you</h2>
 <p class="lead">Questions marked * are required. Skip anything else you're unsure about.</p>
 
@@ -442,7 +749,7 @@
 </div>
 <div class="card" data-req="muscles">
   <span class="q">Muscles you want to prioritize</span>
-  <p class="hint">Pick up to 3. The others will still be trained enough to maintain.</p>
+  <p class="hint">Pick up to 2. The others will still be trained enough to maintain.</p>
   <label class="opt"><span>Chest</span><input type="checkbox" name="muscle"></label>
   <label class="opt"><span>Back</span><input type="checkbox" name="muscle"></label>
   <label class="opt"><span>Shoulders</span><input type="checkbox" name="muscle"></label>
@@ -534,20 +841,22 @@
         <option>Both</option>
         <option>Not applicable</option>
       </select>
-      <label class="field">Level</label>
+      <label class="field">Level (required for each injury or limitation)</label>
       <select>
         <option value=""></option>
         <option>1 Mild: A little uncomfortable, and I can still train</option>
         <option>2 Mild–Moderate: Some exercises bother me. Lighter weight or a machine feels better</option>
         <option>3 Moderate: It limits what I can do. Skip the painful exercises and do a bit less</option>
         <option>4 Severe: I need a doctor or physio to clear me before I train this</option>
-        <option>Not sure</option>
       </select>
     </div>
   </div>
   <button type="button" class="btn-add" id="add-lim">+ Add another</button>
-  <label class="field" for="limnote">Any guidance from a physiotherapist or doctor we should follow?</label>
-  <textarea id="limnote"></textarea>
+  <div class="field-row">
+    <label class="field" for="limnote"><span class="field-name">Any guidance from a physiotherapist or doctor we should follow?</span></label>
+    <button type="button" class="archive-open" id="limnote-archive-btn" data-archive-for="limnote" hidden aria-label="Open archived notes">📦</button>
+  </div>
+  <textarea id="limnote" placeholder="Add new guidance here."></textarea>
   <p class="err"></p>
 </div>
 
@@ -574,18 +883,91 @@
     I do not want to use the squat rack.<br>
     Wrists bother me on heavy barbell presses.
   </div>
-  <label class="field" for="prefs">Your notes</label>
+  <div class="field-row">
+    <label class="field" for="prefs"><span class="field-name">Your notes</span></label>
+    <button type="button" class="archive-open" id="prefs-archive-btn" data-archive-for="prefs" hidden aria-label="Open archived notes">📦</button>
+  </div>
   <textarea id="prefs" placeholder="Write anything that should change the program."></textarea>
+</div>
+
+<h2>Part 7 - Optional progress photos</h2>
+<div class="card" id="photo-card">
+  <p class="hint">Private photos for your trainer to track change. Tap a view to open the editor, choose a photo, then crop and blur your face before saving.</p>
+  <div class="photo-grid" id="photo-grid" data-locked="0">
+    <div class="photo-tile" data-tag="front" role="button" tabindex="0" aria-label="Front View photo">
+      <div class="photo-media"><span class="photo-sil" aria-hidden="true"></span></div>
+      <div class="photo-copy"><strong>Front View</strong><span>Arms slightly out, facing the camera</span></div>
+      <div class="photo-actions"></div>
+    </div>
+    <div class="photo-tile" data-tag="back" role="button" tabindex="0" aria-label="Back View photo">
+      <div class="photo-media"><span class="photo-sil" aria-hidden="true"></span></div>
+      <div class="photo-copy"><strong>Back View</strong><span>Back to camera; hair up if that helps</span></div>
+      <div class="photo-actions"></div>
+    </div>
+    <div class="photo-tile" data-tag="left" role="button" tabindex="0" aria-label="Left Side View photo">
+      <div class="photo-media"><span class="photo-sil" aria-hidden="true"></span></div>
+      <div class="photo-copy"><strong>Left Side View</strong><span>Standing sideways, facing right</span></div>
+      <div class="photo-actions"></div>
+    </div>
+    <div class="photo-tile" data-tag="right" role="button" tabindex="0" aria-label="Right Side View photo">
+      <div class="photo-media"><span class="photo-sil" aria-hidden="true"></span></div>
+      <div class="photo-copy"><strong>Right Side View</strong><span>Standing sideways, facing left</span></div>
+      <div class="photo-actions"></div>
+    </div>
+  </div>
+  <p id="photo-status" hidden></p>
 </div>
 
 <p class="note">Your answers are used only to build a training program that fits you. This is not a medical assessment. Feedback is welcome.</p>
 </main>
-<footer class="site-foot"><p>v2.1 · © 2026 memtoria.com</p></footer>
+<footer class="site-foot"><p id="site-foot-copy">© 2026 memtoria.com</p></footer>
 <dialog id="saved-dialog">
   <h2>Your answers are saved!</h2>
   <p>Contact your trainer to get your new training plan.</p>
   <button type="button" id="saved-ok">Got it</button>
 </dialog>
+<dialog id="archive-dialog">
+  <h2 id="archive-dialog-title">Archived notes</h2>
+  <pre id="archive-dialog-body"></pre>
+  <button type="button" id="archive-dialog-close">Close</button>
+</dialog>
+<dialog id="photo-edit-dialog">
+  <h2 id="photo-edit-title">Edit photo</h2>
+  <p id="photo-edit-help">Choose a photo, then crop the frame and blur your face before saving.</p>
+  <div id="photo-edit-empty">
+    <p>No photo yet.</p>
+    <button type="button" id="photo-edit-choose">Choose photo</button>
+  </div>
+  <div id="photo-edit-stage" hidden>
+    <div id="photo-edit-canvas-wrap">
+      <canvas id="photo-edit-canvas" width="320" height="400"></canvas>
+    </div>
+  </div>
+  <div class="photo-tools" id="photo-edit-tools" hidden>
+    <button type="button" class="photo-tool on" id="photo-tool-crop" aria-label="Crop">
+      <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M6 3v15h15"/><path d="M3 6h15v15"/>
+      </svg>
+      Crop
+    </button>
+    <button type="button" class="photo-tool" id="photo-tool-blur" aria-label="Blur">
+      <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none" opacity="0.35"/>
+      </svg>
+      Blur
+    </button>
+  </div>
+  <div class="photo-edit-actions">
+    <button type="button" id="photo-edit-discard">Discard</button>
+    <button type="button" id="photo-edit-save" aria-disabled="true">Save</button>
+  </div>
+</dialog>
+<dialog id="photo-preview-dialog">
+  <h2>Photo preview</h2>
+  <img id="photo-preview-img" alt="Progress photo preview">
+  <button type="button" id="photo-preview-close">Close</button>
+</dialog>
+<input id="photo-file-input" type="file" accept="image/*" capture="environment" hidden>
 <template id="lim-tpl">
   <div class="lim">
     <label class="field">Injury or limitation</label>
@@ -598,14 +980,13 @@
       <option>Both</option>
       <option>Not applicable</option>
     </select>
-    <label class="field">Level</label>
+    <label class="field">Level (required for each injury or limitation)</label>
     <select>
       <option value=""></option>
       <option>1 Mild: A little uncomfortable, and I can still train</option>
       <option>2 Mild–Moderate: Some exercises bother me. Lighter weight or a machine feels better</option>
       <option>3 Moderate: It limits what I can do. Skip the painful exercises and do a bit less</option>
       <option>4 Severe: I need a doctor or physio to clear me before I train this</option>
-      <option>Not sure</option>
     </select>
   </div>
 </template>
@@ -638,10 +1019,12 @@
 })();
 </script>
 <script src="config.js?v=4"></script>
+<script src="crypto.js?v=2"></script>
 <script src="gate.js?v=5"></script>
-<script src="slot.js?v=5"></script>
-<script src="form.js?v=6"></script>
-<script src="share.js?v=11"></script>
+<script src="slot.js?v=6"></script>
+<script src="form.js?v=8"></script>
+<script src="share.js?v=15"></script>
+<script src="photos.js?v=6"></script>
 <script>
 (function () {
   function addOption(select, value, tod) {
@@ -731,6 +1114,12 @@ memtofitGate.start().then(function (session) {
   return pending.then(function (row) {
     session.row = row;
     if (row && row.answers && window.memtofitFill) window.memtofitFill(row.answers);
+    if (window.memtofitShowSubmitDate) {
+      window.memtofitShowSubmitDate(row && row.answers_submitted_at);
+    }
+    if (window.memtofitPhotos && window.memtofitPhotos.apply) {
+      return window.memtofitPhotos.apply(row && row.photos);
+    }
   }, function () {});
 });
 </script>

@@ -2,7 +2,7 @@
   function rpc(name, args) {
     var base = String(window.MEMTOFIT.url || "").replace(/\/$/, "");
     var ctrl = new AbortController();
-    var timer = setTimeout(function () { ctrl.abort(); }, 15000);
+    var timer = setTimeout(function () { ctrl.abort(); }, 45000);
     return fetch(base + "/rest/v1/rpc/" + name, {
       method: "POST",
       headers: {
@@ -64,6 +64,62 @@
         p_id: session.id,
         p_token: session.token,
         p_followup: followup
+      });
+    },
+    resetPlanProgress: function (session) {
+      return rpc("reset_plan_progress", {
+        p_id: session.id,
+        p_token: session.token
+      });
+    },
+    photoUploadUrl: function (session, tag) {
+      return rpc("photo_upload_url", {
+        p_id: session.id,
+        p_token: session.token,
+        p_tag: tag
+      });
+    },
+    photoDownloadUrl: function (session, tag) {
+      return rpc("photo_download_url", {
+        p_id: session.id,
+        p_token: session.token,
+        p_tag: tag
+      });
+    },
+    photoPut: function (session, tag, cipher) {
+      return rpc("photo_put", {
+        p_id: session.id,
+        p_token: session.token,
+        p_tag: tag,
+        p_cipher: cipher
+      });
+    },
+    photoGet: function (session, tag) {
+      return rpc("photo_get", {
+        p_id: session.id,
+        p_token: session.token,
+        p_tag: tag
+      });
+    },
+    photoCommit: function (session, tag, path) {
+      return rpc("photo_commit", {
+        p_id: session.id,
+        p_token: session.token,
+        p_tag: tag,
+        p_path: path
+      });
+    },
+    photoDelete: function (session, tag) {
+      return rpc("photo_delete", {
+        p_id: session.id,
+        p_token: session.token,
+        p_tag: tag
+      });
+    },
+    lockPhotos: function (session) {
+      return rpc("lock_slot_photos", {
+        p_id: session.id,
+        p_token: session.token
       });
     }
   };

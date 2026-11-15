@@ -1,4 +1,10 @@
 (function () {
+  var NOTE_FIELDS = {
+    limnote: "Any guidance from a physiotherapist or doctor we should follow?",
+    prefs: "Your notes"
+  };
+  var noteArchives = {};
+
   function compact(s) {
     return (s || "").replace(/\s+/g, " ").trim();
   }
@@ -6,11 +12,17 @@
   function optionLabel(input) {
     var label = input.closest("label");
     if (!label) return "";
-    var span = label.querySelector("span");
+    var named = label.querySelector(".field-name");
+    var span = named || label.querySelector("span");
     var node = (span || label).cloneNode(true);
     var smalls = node.querySelectorAll("small");
     for (var i = 0; i < smalls.length; i++) smalls[i].remove();
     return compact(node.textContent);
+  }
+
+  function fieldLabel(lab) {
+    var named = lab.querySelector(".field-name");
+    return compact((named || lab).textContent).replace(/\s*\*$/, "");
   }
 
   function addLine(lines, label, value) {
@@ -26,6 +38,82 @@
     lines.push("");
     lines.push(value);
     lines.push("");
+  }
+
+  function splitNotes(raw) {
+    var text = String(raw || "").replace(/\r\n/g, "\n");
+    var archive = "";
+    var fresh = text;
+    var pack = text.indexOf("📦");
+    var legacy = text.search(/^----- Notes from /m);
+    var start = pack >= 0 ? pack : legacy;
+    if (start < 0) {
+      return { archive: "", fresh: text.trim(), hasArchive: false };
+    }
+    var before = text.slice(0, start).trim();
+    var rest = text.slice(start);
+    var marker = rest.search(/^✏️\s*New comments/m);
+    if (marker < 0) marker = rest.search(/^Add your new comments below\s*$/im);
+    if (marker >= 0) {
+      archive = rest.slice(0, marker).replace(/\s+$/, "");
+      var after = rest.slice(marker);
+      var nl = after.indexOf("\n");
+      fresh = (nl >= 0 ? after.slice(nl + 1) : "").replace(/^\n+/, "").replace(/\s+$/, "");
+    } else {
+      archive = rest.replace(/\s+$/, "");
+      fresh = "";
+    }
+    if (before) fresh = fresh ? (before + "\n\n" + fresh) : before;
+    return { archive: archive, fresh: fresh, hasArchive: !!archive };
+  }
+
+  function joinNotes(archive, fresh) {
+    archive = String(archive || "").replace(/\s+$/, "");
+    fresh = String(fresh || "").replace(/^\s+/, "").replace(/\s+$/, "");
+    if (!archive) return fresh;
+    var out = archive + "\n\n✏️ New comments (add below)\n\n";
+    if (fresh) out += fresh + "\n";
+    if (!/\n\n$/.test(out)) out += out.slice(-1) === "\n" ? "\n" : "\n\n";
+    return out;
+  }
+
+  function setArchiveButton(id, archive) {
+    noteArchives[id] = archive || "";
+    var btn = document.getElementById(id + "-archive-btn");
+    if (!btn) return;
+    if (archive) {
+      btn.hidden = false;
+      btn.setAttribute("aria-label", "Open archived notes");
+    } else {
+      btn.hidden = true;
+    }
+  }
+
+  function clearNoteArchives() {
+    for (var key in noteArchives) {
+      if (Object.prototype.hasOwnProperty.call(noteArchives, key)) delete noteArchives[key];
+    }
+    setArchiveButton("limnote", "");
+    setArchiveButton("prefs", "");
+  }
+
+  function openArchive(id) {
+    var archive = noteArchives[id];
+    if (!archive) return;
+    var dialog = document.getElementById("archive-dialog");
+    var title = document.getElementById("archive-dialog-title");
+    var body = document.getElementById("archive-dialog-body");
+    if (!dialog || !body) return;
+    if (title) title.textContent = (NOTE_FIELDS[id] || "Notes") + " · Archive";
+    body.textContent = archive;
+    if (!dialog.open) dialog.showModal();
+  }
+
+  function applyNoteField(id, raw) {
+    var parts = splitNotes(raw);
+    setArchiveButton(id, parts.archive);
+    var input = document.getElementById(id);
+    if (input) input.value = parts.fresh;
   }
 
   function radioIn(card) {
@@ -61,11 +149,17 @@
       var id = lab.getAttribute("for");
       var input = id ? document.getElementById(id) : null;
       if (!input) continue;
+      var name = fieldLabel(lab);
       if (input.id === "birth-month") {
         var month = compact(input.value);
         var yearEl = document.getElementById("birth-year");
         var year = compact(yearEl && yearEl.value);
-        addLine(lines, compact(lab.textContent), compact([month, year].filter(Boolean).join(" ")));
+        addLine(lines, name, compact([month, year].filter(Boolean).join(" ")));
+        continue;
+      }
+      if (NOTE_FIELDS[input.id]) {
+        var combined = joinNotes(noteArchives[input.id], input.value);
+        if (combined) addBlock(lines, NOTE_FIELDS[input.id], combined);
         continue;
       }
       var val = compact(input.value);
@@ -74,8 +168,8 @@
       if (unit && unit.selectedIndex >= 0) {
         val += " " + compact(unit.options[unit.selectedIndex].text);
       }
-      if (input.tagName === "TEXTAREA") addBlock(lines, compact(lab.textContent), val);
-      else addLine(lines, compact(lab.textContent), val);
+      if (input.tagName === "TEXTAREA") addBlock(lines, name, val);
+      else addLine(lines, name, val);
     }
   }
 
@@ -120,6 +214,12 @@
       }
 
       labeledFields(el, lines);
+
+      if (el.id === "photo-card" && typeof window.memtofitPhotoLines === "function") {
+        var photoLines = window.memtofitPhotoLines();
+        for (var p = 0; p < photoLines.length; p++) lines.push(photoLines[p]);
+      }
+
       lines.push("");
     }
 
@@ -130,9 +230,51 @@
 
   var saving = false;
 
+  function formatSubmitDate(raw) {
+    var value = String(raw || "").trim();
+    if (!value) return null;
+    var when = new Date(value);
+    if (isNaN(when.getTime())) return null;
+    var months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    var iso = when.getFullYear() + "-" +
+      String(when.getMonth() + 1).padStart(2, "0") + "-" +
+      String(when.getDate()).padStart(2, "0");
+    return {
+      iso: iso,
+      label: months[when.getMonth()] + " " + when.getDate() + ", " + when.getFullYear()
+    };
+  }
+
+  function showSubmitDate(raw) {
+    var stamp = formatSubmitDate(raw);
+    var meta = document.getElementById("last-submit");
+    var foot = document.getElementById("site-foot-copy");
+    if (meta) {
+      var time = meta.querySelector("time");
+      if (stamp && time) {
+        time.setAttribute("datetime", stamp.iso);
+        time.textContent = stamp.label;
+        meta.hidden = false;
+      } else {
+        if (time) {
+          time.removeAttribute("datetime");
+          time.textContent = "";
+        }
+        meta.hidden = true;
+      }
+    }
+    if (foot) {
+      foot.textContent = stamp
+        ? ("Submitted on " + stamp.label + " · © 2026 memtoria.com")
+        : "© 2026 memtoria.com";
+    }
+  }
+
+  window.memtofitShowSubmitDate = showSubmitDate;
+
   function submitAnswers() {
     if (saving) return;
-    if (window.memtofitReady && !window.memtofitReady()) return;
+    if (typeof window.memtofitReady !== "function" || !window.memtofitReady()) return;
     var text = buildMarkdown();
     var status = document.getElementById("save-status");
     var btn = document.getElementById("submit-btn");
@@ -167,6 +309,9 @@
     saving = true;
     if (btn) btn.disabled = true;
     window.memtofitSlot.saveAnswers(session, window.memtofitGate.name(), text).then(function () {
+      var now = new Date().toISOString();
+      if (session.row) session.row.answers_submitted_at = now;
+      showSubmitDate(now);
       mark(true);
       done();
     }, function () {
@@ -211,7 +356,8 @@
   }
 
   function labelText(el) {
-    return compact(el.textContent).replace(/\s*\*$/, "");
+    var named = el.querySelector && el.querySelector(".field-name");
+    return compact((named || el).textContent).replace(/\s*\*$/, "");
   }
 
   function clearForm() {
@@ -222,6 +368,7 @@
       else if (field.tagName === "SELECT") field.selectedIndex = 0;
       else field.value = "";
     }
+    clearNoteArchives();
     var list = document.getElementById("lim-list");
     if (!list) return;
     var blocks = list.querySelectorAll(".lim");
@@ -237,6 +384,10 @@
       var id = labels[i].getAttribute("for");
       var input = id ? document.getElementById(id) : null;
       if (!input) continue;
+      if (NOTE_FIELDS[input.id]) {
+        applyNoteField(input.id, value);
+        return;
+      }
       if (input.id === "birth-month") {
         var born = value.split(" ");
         var bornMonth = "";
@@ -328,11 +479,13 @@
           var buf = [];
           i += 1;
           if (lines[i] === "") i += 1;
-          while (i < lines.length && lines[i] !== "" && lines[i].indexOf("- **") !== 0 && lines[i].indexOf("## ") !== 0) {
+          // Keep blank lines inside note blocks (archive + new-comments).
+          while (i < lines.length && lines[i].indexOf("- **") !== 0 && lines[i].indexOf("## ") !== 0) {
             buf.push(lines[i]);
             i += 1;
           }
           i -= 1;
+          while (buf.length && buf[buf.length - 1] === "") buf.pop();
           setLabeled(label, buf.join("\n"));
         } else {
           var labels = document.querySelectorAll("label.field");
@@ -340,6 +493,7 @@
           for (var L = 0; L < labels.length; L++) {
             if (!labels[L].closest(".lim") && labelText(labels[L]) === label) labeled = true;
           }
+          if (/^(Front|Back|Left Side|Right Side) View$/.test(label)) continue;
           if (labeled) setLabeled(label, value);
           else setChoice(label, value);
         }
@@ -352,12 +506,29 @@
   }
 
   window.memtofitFill = fillAnswers;
+  window.memtofitNoteArchives = noteArchives;
 
   var savedOk = document.getElementById("saved-ok");
   if (savedOk) {
     savedOk.addEventListener("click", function () {
       var dialog = document.getElementById("saved-dialog");
       if (dialog && dialog.open) dialog.close();
+    });
+  }
+
+  var archiveClose = document.getElementById("archive-dialog-close");
+  if (archiveClose) {
+    archiveClose.addEventListener("click", function () {
+      var dialog = document.getElementById("archive-dialog");
+      if (dialog && dialog.open) dialog.close();
+    });
+  }
+
+  var archiveBtns = document.querySelectorAll(".archive-open");
+  for (var a = 0; a < archiveBtns.length; a++) {
+    archiveBtns[a].addEventListener("click", function (e) {
+      var id = e.currentTarget.getAttribute("data-archive-for");
+      if (id) openArchive(id);
     });
   }
 

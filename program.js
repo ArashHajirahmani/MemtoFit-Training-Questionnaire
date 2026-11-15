@@ -5,7 +5,9 @@
   var frame = document.getElementById("plan-frame");
   var planStatus = document.getElementById("plan-status");
   var session = null;
-  var state = { unit: "lb", loads: {}, days: {} };
+  var state = { unit: "lb", loads: {}, days: {}, active: null, progress_rev: "" };
+  var clearSession = false;
+  var trainerNotes = [];
 
   function logKey(id) {
     return "memtofit-log-" + id;
@@ -70,8 +72,15 @@
     return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
   }
 
+  function aliasLoadKey(key) {
+    // Match build_plan.slug: expand bare "db" segments so DB/Dumbbell spellings share one series.
+    return String(key || "")
+      .replace(/(^|-)db(?=-|$)/g, "$1dumbbell")
+      .replace(/--+/g, "-");
+  }
+
   function canonicalKey(key) {
-    return String(key || "").replace(/^\d+:/, "");
+    return aliasLoadKey(String(key || "").replace(/^\d+:/, ""));
   }
 
   function entryScore(text, unit) {
@@ -219,8 +228,29 @@
     return "";
   }
 
+  function asActive(raw) {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+    if (raw.idle) return { idle: true };
+    var panel = String(raw.panel || "");
+    if (!/^\d+-\d+$/.test(panel)) return null;
+    var pending = !!raw.pending;
+    var at = raw.at ? String(raw.at) : null;
+    if (!pending && !at) return null;
+    return { panel: panel, at: pending ? null : at, pending: pending };
+  }
+
+  function progressRev(raw) {
+    return String(raw || "").trim();
+  }
+
   function snapshot() {
-    return JSON.parse(JSON.stringify({ unit: state.unit, loads: state.loads, days: state.days }));
+    return JSON.parse(JSON.stringify({
+      unit: state.unit,
+      loads: state.loads,
+      days: state.days,
+      active: state.active,
+      progress_rev: state.progress_rev || ""
+    }));
   }
 
   function same(a, b) {
@@ -273,12 +303,44 @@
     persist();
   }
 
+  function putActive(raw) {
+    state.active = asActive(raw);
+    persist();
+  }
+
+  function asTrainerNotes(raw) {
+    if (!Array.isArray(raw)) return [];
+    return raw.filter(function (note) {
+      return note && typeof note === "object";
+    }).map(function (note) {
+      return {
+        id: note.id ? String(note.id) : "",
+        recorded_at: note.recorded_at ? String(note.recorded_at) : "",
+        transcript: note.transcript == null ? "" : String(note.transcript),
+        voice_url: note.voice_url ? String(note.voice_url) : ""
+      };
+    });
+  }
+
   function sendHydrate() {
     var win = frame.contentWindow;
     if (!win) return;
     var data = snapshot();
     data.loads = presentLoads(data.loads);
-    win.postMessage({ type: "memtofit-hydrate", data: data, place: readPlace() }, "*");
+    win.postMessage({
+      type: "memtofit-hydrate",
+      data: data,
+      place: readPlace(),
+      clearSession: clearSession
+    }, "*");
+    clearSession = false;
+    sendTrainerNotes();
+  }
+
+  function sendTrainerNotes() {
+    var win = frame.contentWindow;
+    if (!win) return;
+    win.postMessage({ type: "memtofit-trainer-notes", notes: trainerNotes }, "*");
   }
 
   function onMessage(e) {
@@ -290,6 +352,7 @@
     }
     if (msg.type === "memtofit-save-load") putLoad(msg.key, String(msg.value || "").trim(), msg.kind, msg.unit);
     if (msg.type === "memtofit-save-day") put(state.days, msg.key, String(msg.value || "").trim());
+    if (msg.type === "memtofit-save-active") putActive(msg.active);
   }
 
   function preparePlan(html) {
@@ -299,7 +362,7 @@
     );
     if (html.indexOf("site-foot") === -1 && html.indexOf("</body>") !== -1) {
       var css = ".site-foot{margin:0;padding:8px 14px calc(18px + env(safe-area-inset-bottom,0px));text-align:center;color:#667061;font-size:12px;line-height:1.4}.site-foot p{margin:0}";
-      var foot = '<footer class="site-foot"><p>v2.1 · © 2026 memtoria.com</p></footer>';
+      var foot = '<footer class="site-foot"><p>© 2026 memtoria.com</p></footer>';
       if (html.indexOf("</style>") !== -1) html = html.replace("</style>", css + "</style>");
       html = html.replace("</body>", foot + "</body>");
     }
@@ -336,17 +399,36 @@
         later.hidden = false;
         return;
       }
+      trainerNotes = asTrainerNotes(row.trainer_notes);
       var server = asObject(row.log) || {};
       var local = asObject(readLocal(session.id)) || {};
+      var serverRev = progressRev(server.progress_rev);
+      var localRev = progressRev(local.progress_rev);
+      var freshProgress = !!serverRev && serverRev !== localRev;
+      clearSession = freshProgress;
       var loads = mergeLoadMaps(server.loads, local.loads);
-      var days = mergeMaps(server.days, local.days);
+      var days = freshProgress ? asObject(server.days) || {} : mergeMaps(server.days, local.days);
+      var serverActive = asActive(server.active);
+      var localActive = asActive(local.active);
+      var active = serverActive;
+      if (!freshProgress && localActive) {
+        if (!serverActive) active = localActive;
+        else if (!!localActive.idle !== !!serverActive.idle) active = localActive.idle ? localActive : serverActive;
+        else if (localActive.idle && serverActive.idle) active = localActive;
+        else if (!!localActive.pending !== !!serverActive.pending) active = localActive.pending ? localActive : serverActive;
+        else if ((localActive.at || "") >= (serverActive.at || "")) active = localActive;
+        else active = serverActive;
+      }
+      if (freshProgress) active = serverActive;
       state = {
         unit: unitFromAnswers(row.answers) || (server.unit === "kg" ? "kg" : "lb"),
         loads: loads,
-        days: days
+        days: days,
+        active: active,
+        progress_rev: serverRev || localRev
       };
       writeLocal();
-      if (!same(server.loads || {}, loads) || !same(server.days || {}, days)) persist();
+      if (!same(server.loads || {}, loads) || !same(server.days || {}, days) || !same(server.active || null, active) || progressRev(server.progress_rev) !== state.progress_rev) persist();
       return memtofitCrypto.decryptPlan(session.name, row.plan).then(function (html) {
         app.hidden = false;
         showPlan(html);

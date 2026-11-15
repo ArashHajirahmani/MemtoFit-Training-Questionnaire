@@ -8,6 +8,7 @@ import html
 import os
 import re
 import sys
+from datetime import date
 from pathlib import Path
 from urllib.parse import quote
 
@@ -292,7 +293,7 @@ def info_button(text, label, on_dark=False):
 
 
 def yt(name):
-    phrase = quote(f'"{name}"', safe="").replace("%20", "+")
+    phrase = quote(f'how to do "{name}" exercise', safe="").replace("%20", "+")
     return "https://www.google.com/search?q=" + phrase + "+site%3Ayoutube.com&udm=7&tbs=dur%3As"
 
 
@@ -301,10 +302,16 @@ def link(name):
     return f'<a href="{href}" target="_blank" rel="noopener noreferrer">{html.escape(name)}</a>'
 
 
+def slug_piece(name):
+    """Hyphen key for one exercise; expand DB → Dumbbell so loads survive renames."""
+    expanded = re.sub(r"\bDB\b", "Dumbbell", name, flags=re.I)
+    return re.sub(r"[^a-z0-9]+", "-", expanded.lower()).strip("-")
+
+
 def slug(names):
     parts = []
     for name in names:
-        piece = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
+        piece = slug_piece(name)
         if piece:
             parts.append(piece)
     return "+".join(parts)
@@ -359,14 +366,24 @@ def exercise_html(groups, join_word, note, group=""):
     flat = []
     if group:
         parts.append(f'<b class="join">{html.escape(group)}</b>')
+    several = len(groups) > 1
     for index, names in enumerate(groups):
         if index:
-            parts.append(f'<b class="join">{join_word}</b>')
+            parts.append(f'<b class="join">{html.escape(join_word)}</b>')
+        wrap = several and len(names) > 1
+        chunk = []
+        if wrap:
+            chunk.append('<b class="join">(</b>')
         for inner, name in enumerate(names):
             if inner:
-                parts.append('<b class="join">OR</b>')
-            parts.append(link(name))
+                chunk.append('<b class="join">OR</b>')
+            chunk.append(link(name))
             flat.append(name)
+        if wrap:
+            chunk.append('<b class="join">)</b>')
+            parts.append('<span class="side">' + "".join(chunk) + "</span>")
+        else:
+            parts.extend(chunk)
     if note:
         label = "Note for " + " and ".join(flat[:3])
         parts.append(info_button(note, label))
@@ -382,11 +399,29 @@ def score_kind(sets):
     return "load", "lb"
 
 
+def sets_html(sets):
+    if isinstance(sets, (list, tuple)):
+        lines = [fmt_sets(part) for part in sets if str(part or "").strip()]
+    else:
+        text = fmt_sets(sets)
+        lines = [text] if text else []
+    if not lines:
+        return ""
+    if len(lines) == 1:
+        return html.escape(lines[0])
+    return (
+        '<span class="set-stack">'
+        + "".join(f'<span class="set-line">{html.escape(line)}</span>' for line in lines)
+        + "</span>"
+    )
+
+
 def row_html(groups, join_word, hints, sets, note, key, group="", track=True):
     exercise, _names = exercise_html(groups, join_word, note, group)
     load = ""
+    sample = " ".join(sets) if isinstance(sets, (list, tuple)) else sets
     if track:
-        kind, unit = score_kind(sets)
+        kind, unit = score_kind(sample)
         placeholder = {"min": "min", "sec": "sec"}.get(unit, "lb")
         label = "Time" if kind == "time" else "Weight"
         mode = "text" if kind == "time" else "decimal"
@@ -398,7 +433,7 @@ def row_html(groups, join_word, hints, sets, note, key, group="", track=True):
         )
     return (
         f"<tr><th>{exercise}{hint_html(hints)}</th>"
-        f'<td class="sets">{html.escape(sets)}{load}</td></tr>'
+        f'<td class="sets">{sets_html(sets)}{load}</td></tr>'
     )
 
 
@@ -431,6 +466,22 @@ def iso_date(line):
 def week_total(line):
     match = re.search(r"\b(\d+)\s+weeks\b", line or "", re.I)
     return match.group(1) if match else ""
+
+
+def cycle_metadata(plan):
+    """Finish is the exclusive review boundary, not an extra training week."""
+    start, finish = iso_date(plan["start"]), iso_date(plan["finish"])
+    try:
+        days = (date.fromisoformat(finish) - date.fromisoformat(start)).days
+    except ValueError:
+        raise SystemExit("Program Start and Finish must contain valid dates with years.")
+    if days <= 0:
+        raise SystemExit("Program Finish must be after Start.")
+    total = (days + 6) // 7
+    stated = week_total(plan["finish"])
+    if stated and int(stated) != total:
+        raise SystemExit("Finish week count conflicts with the Start/Finish dates.")
+    return start, str(total)
 
 
 def find_month(line):
@@ -774,6 +825,19 @@ def check_supersets(rows, where, stations=None, whitelist=None, vetoes=None, ban
         index += 1
 
 
+def slug_self_test():
+    errors = []
+    if slug(["DB Lateral Raise"]) != "dumbbell-lateral-raise":
+        errors.append("DB Lateral Raise must slug like Dumbbell Lateral Raise")
+    if slug(["Dumbbell Lateral Raise"]) != slug(["DB Lateral Raise"]):
+        errors.append("DB and Dumbbell spellings must share one load key")
+    if slug(["Incline DB Press"]) != "incline-dumbbell-press":
+        errors.append("Incline DB Press must expand DB inside the slug")
+    if slug(["Flat DB Press", "DB Lateral Raise"]) != "flat-dumbbell-press+dumbbell-lateral-raise":
+        errors.append("OR/joined slugs must expand DB on every name")
+    return errors
+
+
 def superset_self_test():
     stations = load_stations()
     whitelist = load_whitelist()
@@ -809,6 +873,8 @@ def superset_self_test():
     expect_ok(pair("Rope Pushdown", "Cable Curl"))
     expect_ok(pair("Rope Pushdown OR Straight-Bar Pushdown", "Rope Hammer Curl"))
     expect_fail(pair("Face Pull", "Cable Curl"), "whitelist")
+    expect_ok(pair("Incline DB Press", "Incline Bench Rear Delt Raise"))
+    expect_fail(pair("Flat DB Press", "Incline Bench Rear Delt Raise"), "whitelist")
     expect_fail(pair("Chest Supported Row", "Iso-Lateral Row"), "one station")
     expect_fail(pair("Rope Pushdown OR Seated Dip Machine", "Cable Curl"), "one station")
     expect_fail(
@@ -831,6 +897,38 @@ def superset_self_test():
         errors.append("an OR on one side of a superset was drawn as another AND")
     if both_sides.count('class="join">AND') != 1 or both_sides.count('class="join">OR') != 2:
         errors.append("OR on both sides of a superset was not kept inside each side")
+    if one_side.count('class="join">(</b>') != 1 or one_side.count('class="join">)</b>') != 1:
+        errors.append("an OR beside AND was not grouped as (x OR y) AND z")
+    if both_sides.count('class="join">(</b>') != 2 or both_sides.count('class="join">)</b>') != 2:
+        errors.append("OR on both sides of a superset was not grouped as (x OR y) AND (z OR w)")
+    plain = exercise_html([["Rope Pushdown"], ["Straight-Bar Pushdown"]], "OR", "")[0]
+    if 'class="join">(</b>' in plain:
+        errors.append("a plain OR was wrapped in parentheses")
+    stacked = row_html(
+        [["Flat DB Press"], ["Incline Bench Rear Delt Raise"]],
+        "AND",
+        ["Superset · do both"],
+        ["3 x 8-12 (2 loads)", "3 x 15-20"],
+        "",
+        "flat+rear",
+        track=False,
+    )
+    sets_cell = stacked.split('<td class="sets">', 1)[-1].split("</td>", 1)[0]
+    if 'class="set-stack"' not in sets_cell or sets_cell.count('class="set-line"') != 2:
+        errors.append("different AND/OR set lines must stack instead of joining with a middle dot")
+    if " · " in sets_cell or "3 × 8–12 (2 loads) · 3 × 15–20" in stacked:
+        errors.append("stacked AND/OR sets must not use a middle-dot join")
+    same = row_html(
+        [["Rope Pushdown"], ["Cable Curl"]],
+        "AND",
+        [],
+        "3 x 10-15 each",
+        "",
+        "push+curl",
+        track=False,
+    )
+    if 'class="set-stack"' in same or "3 × 10–15 each" not in same:
+        errors.append("equal AND/OR sets should stay one short each-line")
     return errors
 
 
@@ -839,7 +937,7 @@ def pair_sets(left, right):
         raise SystemExit(f"Superset set counts must be equal ({left} vs {right}).")
     if left == right:
         return f"{left} each"
-    return f"{left} · {right}"
+    return [left, right]
 
 
 def render_rows(day_no, rows, tables):
@@ -911,7 +1009,19 @@ def bonus_present(plan):
     return any(plan.get(name) for name in ("bonus", "support", "coverage", "cardio", "optional"))
 
 
-def render(plan, notes, person, slot):
+def issue_date(value):
+    """Require a recorded calendar date, never infer it from a build or visit."""
+    try:
+        parsed = date.fromisoformat(value)
+        if parsed.isoformat() != value:
+            raise ValueError
+    except (TypeError, ValueError):
+        raise ValueError("Issue date must be YYYY-MM-DD (no time).") from None
+    return parsed
+
+
+def render(plan, notes, person, slot, issued_on):
+    issued = issue_date(issued_on)
     found = sections(notes)
     tables = exercise_rows(found.get("Exercise notes", ""))
     day_body = day_section(found)
@@ -924,6 +1034,7 @@ def render(plan, notes, person, slot):
     day_count = len(weeks[0]["days"])
     if any(len(week["days"]) != day_count for week in weeks):
         raise SystemExit("Each week needs the same number of days.")
+    start_date, total_weeks = cycle_metadata(plan)
 
     start_m = find_month(plan["start"])
     finish_m = find_month(plan["finish"]) or start_m
@@ -936,14 +1047,16 @@ def render(plan, notes, person, slot):
     goal = plan["goal"].replace("•", "·")
 
     h1 = html.escape(f"{nice}{apos}s Gym") + info_button(title_note, "About this program", on_dark=True)
+    # Single-week plans omit the Week Ⅰ/Ⅱ tab row entirely (days-only sticky nav).
     week_buttons = []
-    for index, week in enumerate(weeks):
-        selected = "true" if index == 0 else "false"
-        week_buttons.append(
-            f'<button type="button" role="tab" id="week-tab-{index + 1}" '
-            f'aria-controls="week-panel-{index + 1}" aria-selected="{selected}" '
-            f'data-week="{index}">Week {week["n"]}</button>'
-        )
+    if len(weeks) >= 2:
+        for index, week in enumerate(weeks):
+            selected = "true" if index == 0 else "false"
+            week_buttons.append(
+                f'<button type="button" role="tab" id="week-tab-{index + 1}" '
+                f'aria-controls="week-panel-{index + 1}" aria-selected="{selected}" '
+                f'data-week="{index}">Week {week["n"]}</button>'
+            )
     day_buttons = []
     for index, day in enumerate(weeks[0]["days"]):
         selected = "true" if index == 0 else "false"
@@ -992,10 +1105,25 @@ def render(plan, notes, person, slot):
                 f'<textarea class="day-note" data-day="{w_index}-{d_index}" '
                 f'placeholder="Note for this day"></textarea></label>'
             )
+            active_shell = (
+                '<div class="day-head-side"><div class="day-head-slot">'
+                '<div class="active-on" hidden>'
+                '<span class="active-on-label">Active on</span>'
+                '<div class="active-on-value">'
+                '<button type="button" class="active-on-clear" aria-label="Clear active day">×</button>'
+                '<time class="active-on-date"></time>'
+                '</div>'
+                "</div>"
+                '<button type="button" class="switch-program" hidden>Switch program</button>'
+                '<button type="button" class="activate-day" hidden>Active</button>'
+                "</div></div>"
+            )
             parts.append(
                 f'<section class="panel" data-panel="{w_index}-{d_index}" role="tabpanel" '
                 f'aria-labelledby="day-tab-{d_index + 1}"{section_hidden}>'
+                f'<div class="day-head"><div class="day-head-main">'
                 f'<p class="eyebrow">{eyebrow}</p>{h2}'
+                f"</div>{active_shell}</div>"
                 f'<p class="focus">{focus_text(day["focus"])}</p>'
                 f'<div class="table-wrap"><table><thead><tr>'
                 f"<th>Exercise</th><th>Sets &amp; reps</th></tr></thead><tbody>\n"
@@ -1045,11 +1173,14 @@ def render(plan, notes, person, slot):
         "{{DESCRIPTION}}": html.escape(f"{nice}{apos}s personalized gym plan."),
         "{{H1_HTML}}": h1,
         "{{PERIOD}}": html.escape(period),
-        "{{START_DATE}}": html.escape(iso_date(plan["start"])),
-        "{{WEEK_TOTAL}}": html.escape(week_total(plan["finish"])),
+        "{{ISSUED_ON}}": issued.isoformat(),
+        "{{ISSUED_DATE}}": f"{issued.strftime('%b')} {issued.day}, {issued.year}",
+        "{{START_DATE}}": start_date,
+        "{{WEEK_TOTAL}}": total_weeks,
         "{{GOAL}}": html.escape(goal),
-        "{{STORAGE_KEY}}": html.escape(f"memtofit-done-{slot}"),
+        "{{STORAGE_KEY}}": html.escape(f"memtofit-done-{slot}-{issued.isoformat()}"),
         "{{WEEK_BUTTONS}}": "\n    ".join(week_buttons),
+        "{{WEEKS_HIDDEN}}": "" if len(weeks) >= 2 else " hidden",
         "{{DAY_BUTTONS}}": "\n    ".join(day_buttons),
         "{{PANELS}}": "\n  ".join(panels),
     }
@@ -1074,17 +1205,33 @@ def normalize_name(name):
     return re.sub(r"\s+", "", name.strip().lower())
 
 
+def station_flow_errors(gym_text):
+    """Planner station-flow audit; surgical edits and rebuilds skip ordering, so the publisher re-checks."""
+    if str(PLANNER) not in sys.path:
+        sys.path.insert(0, str(PLANNER))
+    import check_blocks
+
+    library = check_blocks.catalog()
+    return [
+        problem
+        for day, slots in check_blocks.parse_days(gym_text)
+        for problem in check_blocks.flow_problems(day, slots, library)
+    ]
+
+
 def main():
     global ACTIVE_SUPERSETS
-    failures = superset_self_test()
+    failures = slug_self_test() + superset_self_test()
     if failures:
-        print("superset publisher checks failed:\n  " + "\n  ".join(failures), file=sys.stderr)
+        print("publisher checks failed:\n  " + "\n  ".join(failures), file=sys.stderr)
         return 1
     parser = argparse.ArgumentParser(description="Build a MemtoFit program page from the gym and notes files.")
     parser.add_argument("gym", type=Path)
     parser.add_argument("--notes", type=Path)
     parser.add_argument("--name", required=True)
     parser.add_argument("--slot", required=True)
+    parser.add_argument("--issued-on", required=True, type=issue_date,
+                        help="Recorded program issue date, YYYY-MM-DD; preserve it for presentation-only rebuilds.")
     parser.add_argument("--out", type=Path)
     parser.add_argument("--encrypt-out", type=Path)
     args = parser.parse_args()
@@ -1096,11 +1243,17 @@ def main():
     learned = learned_path.read_text(encoding="utf-8") if learned_path.is_file() else ""
     ban_two_machine, vetoes = learned_superset_vetoes(learned, stations)
     ACTIVE_SUPERSETS = (stations, load_whitelist(), vetoes, ban_two_machine)
+    gym_text = args.gym.read_text()
+    flow = station_flow_errors(gym_text)
+    if flow:
+        print("station flow failed:\n  " + "\n  ".join(flow), file=sys.stderr)
+        return 1
     page, missing = render(
-        parse_gym(args.gym.read_text()),
+        parse_gym(gym_text),
         notes.read_text(),
         args.name.strip(),
         args.slot.strip(),
+        args.issued_on.isoformat(),
     )
     if args.out:
         args.out.write_text(page)

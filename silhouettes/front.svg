@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="134 60 132 170">
+  <style>
+    .line { fill: none; stroke: #667364; stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; }
+    .dot { fill: #667364; }
+  </style>
+  <path class="line" d="M 172 105 C 172 68, 228 68, 228 105 C 236 125, 240 165, 234 195 C 228 212, 172 212, 166 195 C 160 165, 164 125, 172 105 Z" />
+  <path class="line" d="M 180 128 C 175 152, 176 185, 183 204 M 220 128 C 225 152, 224 185, 217 204" />
+  <path class="line" d="M 165 125 C 148 142, 142 165, 148 175 C 154 176, 160 162, 163 148" />
+  <path class="line" d="M 235 125 C 252 142, 258 165, 252 175 C 246 176, 240 162, 237 148" />
+  <circle class="dot" cx="188" cy="96" r="2.8" />
+  <circle class="dot" cx="212" cy="96" r="2.8" />
+  <polygon class="line" points="194,104 206,104 200,113" />
+  <path class="line" d="M 182 208 L 174 220 L 192 220 Z" />
+  <path class="line" d="M 218 208 L 208 220 L 226 220 Z" />
+</svg>

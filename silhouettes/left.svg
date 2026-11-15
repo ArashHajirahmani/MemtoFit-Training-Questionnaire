@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="134 60 132 170">
+  <style>
+    .line { fill: none; stroke: #667364; stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; }
+    .dot { fill: #667364; }
+  </style>
+  <path class="line" d="M 182 102 C 182 70, 222 70, 224 96 L 240 102 L 224 108 C 234 132, 236 170, 225 198 C 216 210, 184 210, 174 198 L 164 202 L 172 186 C 168 158, 172 125, 182 102 Z" />
+  <circle class="dot" cx="212" cy="93" r="2.8" />
+  <path class="line" d="M 194 124 C 186 144, 188 168, 198 174 C 206 172, 206 146, 202 126" />
+  <path class="line" d="M 196 208 L 196 220 L 220 220 L 210 208" />
+</svg>
